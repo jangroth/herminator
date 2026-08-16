@@ -1,0 +1,54 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hermes-config
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: hermes
+data:
+  config.yaml: |
+    model:
+      provider: aperture
+      temperature: 0.2
+      max_tokens: 8192
+      base_url: {{ .Values.aperture.baseUrl }}
+      api_key: ts-aperture-managed
+    providers:
+      aperture:
+        type: openai_compatible
+        base_url: {{ .Values.aperture.baseUrl }}
+        api_key: ts-aperture-managed
+        headers:
+          X-Title: Hermes Agent
+    database:
+      journal_mode: wal
+    dashboard:
+      public_url: {{ .Values.dashboard.publicUrl }}
+      oauth:
+        provider: self-hosted
+        self_hosted:
+          issuer: {{ .Values.oidc.issuer }}
+          client_id: {{ .Values.oidc.clientId }}
+          scopes: "openid profile email"
+
+  homekube-ca.crt: |
+{{ .Values.caCert | indent 4 }}
+
+  nginx.conf: |
+    events {}
+    http {
+      server {
+        listen 443 ssl;
+
+        ssl_certificate     /etc/nginx/tls/tls.crt;
+        ssl_certificate_key /etc/nginx/tls/tls.key;
+
+        location / {
+          proxy_pass http://127.0.0.1:9119;
+          proxy_set_header Host $host;
+          proxy_set_header X-Real-IP $remote_addr;
+          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+          proxy_set_header X-Forwarded-Proto https;
+        }
+      }
+    }

@@ -1,0 +1,83 @@
+image:
+  repository: nousresearch/hermes-agent
+  tag: latest
+  pullPolicy: IfNotPresent
+
+namespace: hermes
+
+vip: 192.168.86.246
+
+dashboard:
+  # Workaround for https://github.com/NousResearch/hermes-agent/issues/42780 —
+  # set directly in config.yaml rather than relying on HERMES_DASHBOARD_PUBLIC_URL.
+  publicUrl: https://192.168.86.246
+
+oidc:
+  issuer: https://pi0.taild13083.ts.net/dex
+  # hermes's self-hosted OIDC is a public PKCE client — no client secret exists in
+  # this flow (corrects Spec 001's Decision 4 assumption; see DECISIONS.md). The Dex
+  # static client must be registered `public: true`, no `secret:` field.
+  clientId: hermes
+
+# homekube's internal CA (ClusterIssuer/homekube-ca). Public cert, not a secret.
+# hermes's OIDC discovery/token exchange against Dex needs to trust this to avoid
+# x509 errors (Spec 001, Constraint C) — same problem/fix as Homepage's ArgoCD widget.
+# Source: `kubectl get secret homekube-ca-secret -n cert-manager -o jsonpath='{.data.ca\.crt}' | base64 -d`
+caCert: |
+  -----BEGIN CERTIFICATE-----
+  MIIBcDCCARagAwIBAgIUSf9VR+890wUgUZ1h8wCRr6GA7uwwCgYIKoZIzj0EAwIw
+  FjEUMBIGA1UEAxMLaG9tZWt1YmUtY2EwHhcNMjYwNjE3MDQ1MDMyWhcNMzYwNjE0
+  MDQ1MDMyWjAWMRQwEgYDVQQDEwtob21la3ViZS1jYTBZMBMGByqGSM49AgEGCCqG
+  SM49AwEHA0IABPQeFiJdqorOUyttROs9KRaYAijiazWfsBPVVa7xrBgihA/pY3mK
+  Is4OXPgh7XIxFszEj6B3Waq7sVtveJuwGU2jQjBAMA4GA1UdDwEB/wQEAwICpDAP
+  BgNVHRMBAf8EBTADAQH/MB0GA1UdDgQWBBQPA6nWBdIzpaLGXrwAK/7BywHxfzAK
+  BggqhkjOPQQDAgNIADBFAiAqQsWCyR89x9zOhJ+2gWEBDEcWRVkcfc+rYYuPVQDo
+  cgIhAPoIHcIx/+8VDaNFmE7EtKWzB9EcqE+nTpdwX/tcwIqv
+  -----END CERTIFICATE-----
+
+aperture:
+  baseUrl: http://ai.taild13083.ts.net/v1
+  # Aperture's tailnet IP, pinned via hostAliases (Constraint A — the tailscale
+  # sidecar shares pod routes but not /etc/resolv.conf, so this name doesn't
+  # resolve in-pod). `tailscale status` on the `ai` device.
+  tailnetIp: 100.126.29.31
+
+tailscale:
+  image: tailscale/tailscale
+  tag: latest
+  hostname: hermes-aperture
+  stateSecretName: hermes-tailscale-state
+
+# API_SERVER_KEY and the tailscale auth key are real credentials — they ship only
+# as SealedSecret ciphertext (templates/sealedsecret.yaml), never plaintext here.
+# Populated at deploy time via `kubeseal`.
+sealedSecret:
+  encryptedApiServerKey: ""
+  encryptedTsAuthKey: ""
+
+persistence:
+  size: 5Gi
+  storageClass: longhorn
+
+resources:
+  hermes:
+    requests:
+      cpu: 500m
+      memory: 512Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+  nginx:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+  tailscale:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi

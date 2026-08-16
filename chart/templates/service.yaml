@@ -1,0 +1,38 @@
+# LoadBalancer Service carries port 443 only — a LoadBalancer-type Service exposes
+# every port it lists on the external VIP, so the gateway (internal-only per MVP
+# scope) must live in a separate ClusterIP Service below rather than share this one.
+apiVersion: v1
+kind: Service
+metadata:
+  name: hermes
+  namespace: {{ .Values.namespace }}
+  annotations:
+    io.cilium/lb-ipam-ips: {{ .Values.vip | quote }}
+  labels:
+    app.kubernetes.io/name: hermes
+spec:
+  type: LoadBalancer
+  selector:
+    app.kubernetes.io/name: hermes
+  ports:
+    - name: https
+      port: 443
+      targetPort: 443
+      protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hermes-gateway
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: hermes
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: hermes
+  ports:
+    - name: gateway
+      port: 8642
+      targetPort: 8642
+      protocol: TCP

@@ -11,6 +11,23 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Entries
 - **Operational** — manual interventions, recoveries, one-off ops actions
 - **Decisions** — links to `DECISIONS.md` entries created on this day
 
+## 2026-08-17
+
+### Added
+
+- `chart/` — Helm chart implementing Spec 001: `Chart.yaml`, `values.yaml`, and templates for the PVC, ConfigMap (hermes `config.yaml`, `homekube-ca.crt`, nginx config), SealedSecret shape, ServiceAccount/Role/RoleBinding + pre-created tailscale state Secret, cert-manager `Certificate`, three-container `Deployment` (hermes/nginx/tailscale), and split LoadBalancer (443) / ClusterIP (8642) Services. Validated with `helm lint` and `helm template` + `kubectl apply --dry-run=client` against the live cluster's API schema — no live resources created.
+
+### Fixed
+
+- Spec 001's Constraint C (how hermes trusts `homekube-ca`) resolved as "mount the CA cert + CA-bundle env vars" — see [DECISIONS.md #008](DECISIONS.md#008).
+- Spec 001's assumption of a shared Dex client secret (Decision 2, `templates/secret.yaml`) was wrong: hermes's self-hosted OIDC is a public PKCE client with no client secret. Removed the plain-Secret template; see [DECISIONS.md #002 amendment](DECISIONS.md#002--dex-client-secret-is-a-plain-shared-string-not-sealed-2026-08-14).
+- `templates/service.yaml`'s single-Service design (from the spec's Approach table) couldn't actually keep the gateway internal-only — a `LoadBalancer`-type Service exposes every port it lists on the external VIP. Split into two Services: `hermes` (LoadBalancer, 443 only) and `hermes-gateway` (ClusterIP, 8642).
+- Tailscale sidecar's state-persistence env var corrected from the spec's `TS_STATE=kube:<secret-name>` to the actually-documented `TS_KUBE_SECRET=<secret-name>` (confirmed against Tailscale's own Docker parameter reference).
+
+### Decisions
+
+- [008](DECISIONS.md#008) hermes trusts `homekube-ca` via a mounted CA cert + CA-bundle env vars.
+
 ## 2026-08-16
 
 ### Changed

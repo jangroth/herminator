@@ -1,0 +1,16 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: hermes-tls
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: hermes
+spec:
+  secretName: hermes-tls
+  issuerRef:
+    kind: ClusterIssuer
+    name: homekube-ca
+  ipAddresses:
+    - {{ .Values.vip }}
+  duration: 8760h
+  renewBefore: 720h

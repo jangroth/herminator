@@ -2,6 +2,16 @@
 
 Newest decision first. Captures **why**. See `CHANGELOG.md` for **what was done**.
 
+## 008 — hermes trusts `homekube-ca` via a mounted CA cert + CA-bundle env vars, not a native config option (2026-08-17)
+
+**Decision:** Constraint C (Spec 001) is resolved as option (b): the chart's `configmap.yaml` carries `homekube-ca-secret`'s `ca.crt` as a literal, mounted into the hermes container at `/etc/ssl/certs/homekube/homekube-ca.crt`, with `NODE_EXTRA_CA_CERTS`, `SSL_CERT_FILE`, and `REQUESTS_CA_BUNDLE` all pointed at it.
+
+**Rationale:** hermes's self-hosted OIDC docs document no native custom-CA config key (option (a), checked and absent). homekube already solved this exact problem for Homepage's ArgoCD widget — also HTTPS-only, also `homekube-ca`-signed — with a ConfigMap + `NODE_EXTRA_CA_CERTS`; same fix, same cluster, proven precedent. hermes's runtime language isn't confirmed, so all three standard CA-bundle env vars are set together rather than guessing Node vs. Python; unused ones are harmless.
+
+**Trade-offs accepted:** none — this is a public CA certificate, not a secret, and the pattern is already running elsewhere in the cluster.
+
+---
+
 ## 007 — hermes reaches Aperture via a Tailscale sidecar in its own pod, not cluster-wide egress (2026-08-14)
 
 **Decision:** LLM connectivity goes through Aperture by Tailscale (`http://ai.taild13083.ts.net/v1`), matching the already-validated local config (`~/.hermes/config.yaml`: `provider: aperture`, `type: openai_compatible`). hermes's `OPENAI_BASE_URL`/`OPENAI_API_KEY` point at it. To reach it from the cluster, the hermes pod gets a third container: the official `tailscale/tailscale` sidecar, giving the pod its own tailnet node identity (MagicDNS resolution + routing to Aperture). This is scoped entirely to herminator's chart — no changes to homekube's shared cluster networking.
@@ -63,6 +73,8 @@ Newest decision first. Captures **why**. See `CHANGELOG.md` for **what was done*
 **Rationale:** Reuses homekube's own precedent (its DECISION-040): an internal, Tailscale-gated shared secret between two trusted in-cluster OIDC endpoints is low-value, not worth the sealed-secrets ceremony. Consistent with how ArgoCD's and Grafana's Dex client secrets are already handled.
 
 **Trade-offs accepted:** the string is visible in both repos' git history. Trivial to rotate or upgrade to a sealed secret later if that judgment changes.
+
+**Amended 2026-08-17 (moot, not wrong):** while building the chart, hermes's self-hosted OIDC docs turned out to describe a **public PKCE client — no client secret at all** (config surface is `issuer`/`client_id`/`scopes` only; the env var table has no `CLIENT_SECRET`). This decision's "if it exists, treat it as low-value" judgment isn't wrong, it's just inapplicable — there's nothing to seal or share. `chart/templates/secret.yaml` was removed; when the homekube-apps Dex change lands (Spec 001 rollout step 7), the `hermes` static client must be registered `public: true` with no `secret:` field, not with a shared string as the spec originally assumed.
 
 ---
 

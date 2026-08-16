@@ -1,0 +1,169 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hermes
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: hermes
+spec:
+  replicas: 1
+  # RWO Longhorn volume: RollingUpdate deadlocks waiting for the old pod to release
+  # it, and hermes is single-instance by design (sqlite + lockfiles) anyway.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: hermes
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: hermes
+    spec:
+      serviceAccountName: hermes
+      # Aperture's MagicDNS name doesn't resolve in-pod — the tailscale sidecar
+      # shares pod routes/tailscale0 but not /etc/resolv.conf (Constraint A).
+      hostAliases:
+        - ip: {{ .Values.aperture.tailnetIp }}
+          hostnames:
+            - {{ .Values.aperture.baseUrl | trimPrefix "http://" | trimSuffix "/v1" }}
+
+      containers:
+        - name: hermes
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["gateway", "run"]
+          env:
+            - name: HERMES_UID
+              value: "1000"
+            - name: HERMES_GID
+              value: "1000"
+            - name: HERMES_DASHBOARD
+              value: "1"
+            # Loopback only — nginx is the only front door (Constraint B). kubelet
+            # probes the pod IP, so this port is never probed directly.
+            - name: HERMES_DASHBOARD_HOST
+              value: "127.0.0.1"
+            - name: HERMES_DASHBOARD_PORT
+              value: "9119"
+            - name: API_SERVER_ENABLED
+              value: "true"
+            - name: API_SERVER_HOST
+              value: "0.0.0.0"
+            - name: API_SERVER_PORT
+              value: "8642"
+            - name: API_SERVER_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: hermes-secrets
+                  key: API_SERVER_KEY
+            # CA trust for the OIDC back-channel to Dex (Constraint C). Runtime
+            # language isn't confirmed, so all three are set — harmless if unused.
+            - name: NODE_EXTRA_CA_CERTS
+              value: /etc/ssl/certs/homekube/homekube-ca.crt
+            - name: SSL_CERT_FILE
+              value: /etc/ssl/certs/homekube/homekube-ca.crt
+            - name: REQUESTS_CA_BUNDLE
+              value: /etc/ssl/certs/homekube/homekube-ca.crt
+          ports:
+            - name: gateway
+              containerPort: 8642
+            - name: dashboard
+              containerPort: 9119
+          volumeMounts:
+            - name: data
+              mountPath: /opt/data
+            - name: config
+              mountPath: /opt/data/config.yaml
+              subPath: config.yaml
+            - name: ca-cert
+              mountPath: /etc/ssl/certs/homekube
+              readOnly: true
+          readinessProbe:
+            tcpSocket:
+              port: 8642
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: 8642
+            initialDelaySeconds: 30
+            periodSeconds: 20
+          resources:
+            {{- toYaml .Values.resources.hermes | nindent 12 }}
+
+        - name: nginx
+          image: nginx:stable
+          ports:
+            - name: https
+              containerPort: 443
+          volumeMounts:
+            - name: config
+              mountPath: /etc/nginx/nginx.conf
+              subPath: nginx.conf
+            - name: tls
+              mountPath: /etc/nginx/tls
+              readOnly: true
+          readinessProbe:
+            tcpSocket:
+              port: 443
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: 443
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            {{- toYaml .Values.resources.nginx | nindent 12 }}
+
+        - name: tailscale
+          image: "{{ .Values.tailscale.image }}:{{ .Values.tailscale.tag }}"
+          securityContext:
+            capabilities:
+              add:
+                - NET_ADMIN
+          env:
+            - name: TS_AUTHKEY
+              valueFrom:
+                secretKeyRef:
+                  name: hermes-secrets
+                  key: TS_AUTHKEY
+            - name: TS_KUBE_SECRET
+              value: {{ .Values.tailscale.stateSecretName }}
+            - name: TS_HOSTNAME
+              value: {{ .Values.tailscale.hostname }}
+            # containerboot defaults to userspace mode, which would break
+            # transparent outbound routing this whole setup relies on.
+            - name: TS_USERSPACE
+              value: "false"
+            # Inbound-closed: the sidecar only ever needs outbound to Aperture.
+            # Never add --accept-routes here — it would hairpin in-pod traffic to
+            # the 192.168.86.240/28 VIPs (including Dex) out over the tailnet.
+            - name: TS_EXTRA_ARGS
+              value: "--shields-up"
+          volumeMounts:
+            - name: dev-net-tun
+              mountPath: /dev/net/tun
+          resources:
+            {{- toYaml .Values.resources.tailscale | nindent 12 }}
+
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: hermes-data
+        - name: config
+          configMap:
+            name: hermes-config
+        - name: ca-cert
+          configMap:
+            name: hermes-config
+            items:
+              - key: homekube-ca.crt
+                path: homekube-ca.crt
+        - name: tls
+          secret:
+            secretName: hermes-tls
+        - name: dev-net-tun
+          hostPath:
+            path: /dev/net/tun
+            type: CharDevice

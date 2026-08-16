@@ -1,8 +1,26 @@
 # Spec 001 — Deploy Hermes Agent to homekube
 
-**Status:** Draft
+**Status:** In Progress — Phase 1 (chart build) complete; Phase 2 (secrets, homekube-apps, live rollout) not started
 **Date:** 2026-08-14
-**Revised:** 2026-08-16 — review pass against the live cluster, plus a same-day second pass fixing internal contradictions found in spec review; see "Revisions" below.
+**Revised:** 2026-08-16 — review pass against the live cluster, plus a same-day second pass fixing internal contradictions found in spec review; see "Revisions" below. **2026-08-17** — chart built and validated (`chart/`); Constraint C resolved; two spec assumptions corrected (no Dex client secret; wrong Tailscale state env var name). See "Implementation Status" below.
+
+## Implementation Status (2026-08-17)
+
+**Phase 1 — chart build: done.** `chart/` exists in this repo: `Chart.yaml`, `values.yaml`, and templates for the PVC, ConfigMap, SealedSecret shape, ServiceAccount/Role/RoleBinding + tailscale state Secret, cert-manager `Certificate`, three-container Deployment, and Services. `helm lint` and `helm template` + `kubectl apply --dry-run=client` (validated against the live cluster's actual API schema) both pass clean. Nothing has touched the live cluster or another repo — no live resources created, nothing committed.
+
+**Phase 2 — not started.** Generating real credentials, sealing them, pushing this repo, editing `homekube-apps`, and syncing ArgoCD are all still open — each is credential-bearing, cross-repo, or a live-cluster change, gated on explicit go-ahead per this repo's trust model. **Pick up at rollout step 5** below.
+
+**Resolved while building** (previously blocking "Open Questions" / constraints):
+- **Constraint C** (how hermes trusts `homekube-ca`): resolved as option (b) — mount the CA cert, set `NODE_EXTRA_CA_CERTS`/`SSL_CERT_FILE`/`REQUESTS_CA_BUNDLE`. Same fix homekube already uses for Homepage's ArgoCD widget. See [DECISIONS.md #008](../../DECISIONS.md#008).
+- **OIDC callback path**: confirmed `/auth/callback` from hermes's docs — the spec's original assumption was correct, no change needed.
+- **Aperture's tailnet IP**: `100.126.29.31` (device `ai` in `tailscale status`, active).
+
+**Corrections found while building** (spec text below is corrected in place; noting here for a quick diff against the earlier read):
+- **There is no Dex client secret.** hermes's self-hosted OIDC is a public PKCE client — no client secret exists anywhere in this flow (docs: "a public PKCE client — no client secret"; env var table has `ISSUER`/`CLIENT_ID`/`SCOPES` only). Decision 4 doesn't apply; `templates/secret.yaml` was removed from the chart. The homekube-apps Dex static client needs `public: true`, no `secret:` field — not the shared string originally planned. See [DECISIONS.md #002 amendment](../../DECISIONS.md#002--dex-client-secret-is-a-plain-shared-string-not-sealed-2026-08-14).
+- **`templates/service.yaml` is two Services, not one.** A `LoadBalancer`-type Service exposes every port it lists externally, so the gateway (`:8642`, meant to stay internal-only) can't share the VIP-facing Service with `:443`. Chart has `hermes` (LoadBalancer, 443 only) and `hermes-gateway` (ClusterIP, 8642).
+- **Tailscale state env var is `TS_KUBE_SECRET=<secret-name>`, not `TS_STATE=kube:<secret-name>`** — confirmed against Tailscale's own Docker parameter reference; the latter doesn't exist as a documented env var.
+
+Full detail in `CHANGELOG.md`'s 2026-08-17 entry.
 
 ## Problem
 
@@ -41,6 +59,7 @@ Facts below were checked directly, not assumed. They change several implementati
 3. **No basic auth.** Dashboard auth uses hermes's built-in self-hosted OIDC, federated to homekube's existing Dex — same shape as ArgoCD/Grafana's Dex `staticClients`. Because homekube has no ingress controller, and both ArgoCD and Grafana went HTTPS-only when they joined Dex, hermes gets a small TLS-terminating **nginx sidecar** in front of its plaintext dashboard port, certificate issued by the existing `homekube-ca` ClusterIssuer.
    *[Revised 2026-08-16]* The OIDC **issuer** is `https://pi0.taild13083.ts.net/dex`, not the `.246` or `.244` IP — issuer matching is strict and an IP form fails discovery and `iss` validation. hermes must also trust `homekube-ca` to complete the back-channel token exchange; mechanism is an open question (see below).
 4. **Dex client secret is a plain shared string, not sealed** — reuses homekube's own DECISION-040 precedent: an internal, Tailscale-gated shared secret between two trusted in-cluster OIDC endpoints is low-value and not worth sealed-secrets ceremony. Trivial to upgrade later if that judgment changes.
+   *[Corrected 2026-08-17]* Moot, not wrong: hermes's self-hosted OIDC turns out to be a public PKCE client with **no client secret at all**. There's nothing to seal or share — see "Implementation Status" above and DECISIONS.md #002's amendment.
 5. **Storage:** fresh Longhorn PVC. No migration of existing `~/.hermes` data — user confirmed none of it is precious.
 6. **Cross-repo bookkeeping:** this repo owns its own spec/decision/changelog. homekube's own `DECISIONS.md`/`CHANGELOG.md`/README "Deployed Components" table also get an entry once the ArgoCD Application actually lands there, per homekube's own "source reflects runtime" convention.
 7. **Issue tracking:** herminator's own GitHub Issues — it's a distinct app/product, not cluster infra, so it doesn't join the shared `jangroth/homekube` tracker. Reuses homekube's `agent-safe` label convention: an issue gets `agent-safe` only if it's an unambiguous, reversible, PR-only fix with no open design decision and no physical/external-account step.
@@ -90,6 +109,8 @@ In kernel mode the pod acquires its own tailnet identity, and the Compose config
 
 Dex serves its issuer over TLS with a `homekube-ca`-signed cert, so hermes's back-channel discovery and token exchange will fail x509 verification out of the box. Both existing clients had to solve this and solved it differently (ArgoCD embeds `rootCA:`; Grafana routes the back channel over plaintext ClusterIP). Note Grafana can only split channels because it configures each endpoint URL individually — hermes's self-hosted OIDC surface looks issuer-only + discovery, so the Grafana route is likely unavailable to us. Which options hermes actually supports is not yet known — see Open Questions. This must be settled **before** writing `templates/deployment.yaml`, since the three candidate fixes have different chart shapes.
 
+**Resolved 2026-08-17:** option (b). hermes's docs confirm no native custom-CA config exists (option (a) off the table), and option (c) was already flagged unlikely. `chart/templates/configmap.yaml` carries `homekube-ca-secret`'s `ca.crt` as a literal, mounted at `/etc/ssl/certs/homekube/homekube-ca.crt`, with `NODE_EXTRA_CA_CERTS`/`SSL_CERT_FILE`/`REQUESTS_CA_BUNDLE` all pointed at it (hermes's runtime language isn't confirmed, so all three are set — unused ones are harmless). Directly precedented: Homepage's ArgoCD widget solves the identical problem the identical way. See DECISIONS.md #008.
+
 ## MVP Scope
 
 **In:**
@@ -116,15 +137,15 @@ Dex serves its issuer over TLS with a `homekube-ca`-signed cert, so hermes's bac
 | File | Contents |
 |---|---|
 | `Chart.yaml` | `hermes`, `version: 0.1.0` (must be valid SemVer — "v0" is not) |
-| `values.yaml` | image tag, VIP, OIDC issuer/client id/secret, Aperture base URL **and pinned tailnet IP** (Constraint A), **sealed** ciphertexts for both the Tailscale auth key and `API_SERVER_KEY` (never the plaintext values — second-pass revision), resource requests/limits, PVC size |
+| `values.yaml` | image tag, VIP, OIDC issuer/client id *(no client secret — see 2026-08-17 correction above)*, Aperture base URL **and pinned tailnet IP** (Constraint A), **sealed** ciphertexts for both the Tailscale auth key and `API_SERVER_KEY` (never the plaintext values — second-pass revision), resource requests/limits, PVC size |
 | `templates/pvc.yaml` | Longhorn-backed `PersistentVolumeClaim`, RWO, default 5Gi (current usage ~370MB + headroom). Annotated `helm.sh/resource-policy: keep` and `argocd.argoproj.io/sync-options: Prune=false` — the default StorageClass reclaims `Delete`, so an app delete or an immutable-field change would otherwise destroy the volume, and there is no backup policy yet (deferred) |
-| `templates/configmap.yaml` | hermes `config.yaml` overrides — `dashboard.public_url` (see gotcha below), OIDC issuer `https://pi0.taild13083.ts.net/dex`, and `provider: aperture` — plus the nginx sidecar config |
-| `templates/secret.yaml` | plain (unsealed — Decision 4) `Secret` holding `HERMES_DASHBOARD_OIDC_CLIENT_SECRET` only — `API_SERVER_KEY` moved to the SealedSecret (second-pass revision) |
+| `templates/configmap.yaml` | hermes `config.yaml` overrides — `dashboard.public_url` (see gotcha below), OIDC issuer + client id `https://pi0.taild13083.ts.net/dex`, and `provider: aperture` — plus the `homekube-ca.crt` literal (Constraint C) and the nginx sidecar config |
+| ~~`templates/secret.yaml`~~ | **Removed 2026-08-17.** Was going to hold `HERMES_DASHBOARD_OIDC_CLIENT_SECRET` — that env var doesn't exist; hermes's self-hosted OIDC is a public PKCE client with no client secret. |
 | `templates/sealedsecret.yaml` | `SealedSecret` (bitnami-labs/sealed-secrets, running in homekube's `kube-system`) holding the Tailscale auth key (`TS_AUTHKEY`) and `API_SERVER_KEY` — both real credentials, encrypted at rest in git, decrypted in-cluster only. The auth key must be **reusable, tagged, non-ephemeral** (second-pass revision). Seal for namespace `hermes` specifically; SealedSecrets are scoped to namespace + name |
-| `templates/serviceaccount.yaml` | scoped `ServiceAccount` + `Role`/`RoleBinding` (`get`/`update`/`patch` on the one named state Secret via `resourceNames`) so the Tailscale sidecar can persist its node state via `TS_STATE=kube:<secret-name>` — the one exception to "no custom RBAC for MVP". **The chart templates the state Secret itself, empty** — RBAC `resourceNames` cannot constrain `create`, so a scoped Role could never let tailscaled create it at runtime (second-pass revision); pre-creating it keeps the Role tight. ArgoCD must not fight tailscaled's writes to it: add an `ignoreDifferences` entry for the Secret's `data` in the Application |
+| `templates/serviceaccount.yaml` | scoped `ServiceAccount` + `Role`/`RoleBinding` (`get`/`update`/`patch` on the one named state Secret via `resourceNames`) so the Tailscale sidecar can persist its node state via `TS_KUBE_SECRET=<secret-name>` *(corrected 2026-08-17 — the previously-written `TS_STATE=kube:<secret-name>` isn't a real containerboot env var; `TS_KUBE_SECRET` is)* — the one exception to "no custom RBAC for MVP". **The chart templates the state Secret itself, empty** — RBAC `resourceNames` cannot constrain `create`, so a scoped Role could never let tailscaled create it at runtime (second-pass revision); pre-creating it keeps the Role tight. ArgoCD must not fight tailscaled's writes to it: add an `ignoreDifferences` entry for the Secret's `data` in the Application |
 | `templates/certificate.yaml` | cert-manager `Certificate`, issued by `homekube-ca` ClusterIssuer, `ipAddresses: ["192.168.86.246"]`, output secret `hermes-tls` |
-| `templates/deployment.yaml` | `replicas: 1`, **`strategy: Recreate`** (RWO Longhorn volume — the default RollingUpdate deadlocks waiting for the old pod to release it, and any overlap risks concurrent writers on the sqlite files; the spec already notes hermes is single-instance by design). `hostAliases` for Aperture (Constraint A). Three containers: `hermes` (PVC at `/opt/data`, configmap mount, `envFrom` secrets, dashboard bound to `127.0.0.1:9119`, gateway on `0.0.0.0:8642`), `nginx` sidecar (mounts `hermes-tls`, terminates `:443`, proxies to `127.0.0.1:9119` with `X-Forwarded-*` headers), and `tailscale` sidecar (official `tailscale/tailscale` image, `NET_ADMIN` + `/dev/net/tun`, **`TS_USERSPACE=false`** — containerboot defaults to userspace mode, which breaks transparent outbound routing; second-pass revision — `TS_AUTHKEY` from the sealed secret, `TS_STATE=kube:<secret-name>`, `TS_EXTRA_ARGS=--shields-up`, **no `--accept-routes`**, hostname `hermes-aperture`). Probes: `tcpSocket` on `:8642` for hermes and `:443` for nginx — never `:9119`, which binds loopback while kubelet probes the pod IP (second-pass revision) |
-| `templates/service.yaml` | `type: LoadBalancer`, `io.cilium/lb-ipam-ips: "192.168.86.246"`, port 443 → nginx sidecar only |
+| `templates/deployment.yaml` | `replicas: 1`, **`strategy: Recreate`** (RWO Longhorn volume — the default RollingUpdate deadlocks waiting for the old pod to release it, and any overlap risks concurrent writers on the sqlite files; the spec already notes hermes is single-instance by design). `hostAliases` for Aperture (Constraint A). Three containers: `hermes` (PVC at `/opt/data`, configmap mount, CA-trust env vars (Constraint C), `API_SERVER_KEY` from the sealed secret, dashboard bound to `127.0.0.1:9119`, gateway on `0.0.0.0:8642`), `nginx` sidecar (mounts `hermes-tls`, terminates `:443`, proxies to `127.0.0.1:9119` with `X-Forwarded-*` headers), and `tailscale` sidecar (official `tailscale/tailscale` image, `NET_ADMIN` + `/dev/net/tun`, **`TS_USERSPACE=false`** — containerboot defaults to userspace mode, which breaks transparent outbound routing; second-pass revision — `TS_AUTHKEY` from the sealed secret, `TS_KUBE_SECRET=<secret-name>` *(corrected 2026-08-17)*, `TS_EXTRA_ARGS=--shields-up`, **no `--accept-routes`**, hostname `hermes-aperture`). Probes: `tcpSocket` on `:8642` for hermes and `:443` for nginx — never `:9119`, which binds loopback while kubelet probes the pod IP (second-pass revision) |
+| `templates/service.yaml` | **Two Services (corrected 2026-08-17)** — a `LoadBalancer`-type Service exposes every port it lists on the external VIP, so `:8642` can't share the VIP Service with `:443` as originally written here. `hermes`: `type: LoadBalancer`, `io.cilium/lb-ipam-ips: "192.168.86.246"`, port 443 → nginx sidecar only. `hermes-gateway`: `type: ClusterIP`, port 8642 → hermes container, internal only |
 
 No `namespace.yaml` template — the `hermes` namespace is created via the ArgoCD Application's `CreateNamespace=true` sync option, matching Dex/Homepage.
 
@@ -141,22 +162,22 @@ Add to `dex.yaml`'s inline `staticClients` (note: this renders into the `dex` **
 ```yaml
 - id: hermes
   name: Hermes
-  secret: hermes-dex-client-secret   # plain shared string, see Decision 4
+  public: true   # public PKCE client, no client secret — see 2026-08-17 correction
   redirectURIs:
     - https://192.168.86.246/auth/callback
 ```
 
-The `/auth/callback` path is an **assumption** — confirm hermes's actual self-hosted-OIDC callback path from its docs (same page as the Constraint C check) before landing this. A mismatch fails the flow with Dex's least helpful error.
+*[Corrected 2026-08-17]* The `/auth/callback` path is confirmed from hermes's docs, not an assumption — matches what's written above. There is no `secret:` field: hermes's self-hosted OIDC is a public PKCE client (see Implementation Status, Decision 4's correction, DECISIONS.md #002 amendment).
 
 New `applications/wave-03-apps/hermes.yaml` ArgoCD `Application`: git source → this repo (`chart/`), destination namespace `hermes`, `argocd.argoproj.io/sync-wave: "3"` (after Dex/wave 02, alongside Homepage), `automated: {prune: true, selfHeal: true}`, `syncOptions: [CreateNamespace=true]`, plus the `ignoreDifferences` entry for the tailscale state Secret. Append to root `applications/kustomization.yaml`. homekube's own `DECISIONS.md`/`CHANGELOG.md`/README get an entry (Decision 6).
 
 ### 4. Rollout order
 
-1. Confirm `192.168.86.246` is still free (`kubectl get svc -A | grep LoadBalancer`) and that `homekube-ca`/cert-manager are healthy.
-2. Settle Constraint C — determine how hermes accepts a custom CA (the Grafana plaintext-back-channel route is likely unavailable; see Constraint C) — and confirm the OIDC callback path for Dex's `redirectURIs` while on the same docs page. This gates the deployment template.
-3. Get Aperture's tailnet IP for `hostAliases` (Constraint A).
-4. Build the chart in this repo; `helm lint` / `helm template` locally.
-5. Generate the shared Dex client secret string. Generate `API_SERVER_KEY` and mint a reusable, tagged, non-ephemeral Tailscale auth key; seal both for namespace `hermes`.
+1. ~~Confirm `192.168.86.246` is still free (`kubectl get svc -A | grep LoadBalancer`) and that `homekube-ca`/cert-manager are healthy.~~ **Done 2026-08-14/17** — confirmed free, ClusterIssuers Ready.
+2. ~~Settle Constraint C ... confirm the OIDC callback path...~~ **Done 2026-08-17** — see "Implementation Status" / DECISIONS.md #008.
+3. ~~Get Aperture's tailnet IP for `hostAliases` (Constraint A).~~ **Done 2026-08-17** — `100.126.29.31`.
+4. ~~Build the chart in this repo; `helm lint` / `helm template` locally.~~ **Done 2026-08-17** — `chart/`, lint + template + dry-run-client all clean.
+5. **← Pick up here.** Generate `API_SERVER_KEY` and mint a reusable, tagged, non-ephemeral Tailscale auth key; seal both for namespace `hermes`. (No Dex client secret to generate — none exists, see Decision 4's correction.)
 6. **Push this repo's chart first** — the ArgoCD Application must not exist before its git source does, or it lands Unknown/Degraded and thrashes under `selfHeal` + `prune`.
 7. Land the homekube-apps changes (Dex static client + new `hermes.yaml` Application), sync, verify Dex serves the new client.
 8. Sync the hermes Application.
@@ -175,11 +196,11 @@ New `applications/wave-03-apps/hermes.yaml` ArgoCD `Application`: git source →
 - [ ] Tailscale sidecar shows up as its own device in the tailnet admin console; hermes can reach Aperture and complete an actual LLM request through it
 - [ ] Sidecar survives a pod restart without creating a duplicate/orphaned tailnet device (state persistence via the Kubernetes-Secret store works, and ArgoCD is not reverting it)
 - [ ] ArgoCD shows the app Synced/Healthy
-- [ ] No plaintext *high-value* credentials in git — the Dex client secret is accepted as low-value per Decision 4, but the Tailscale auth key (Decision 8) and `API_SERVER_KEY` are sealed, never plaintext in any commit
+- [ ] No plaintext high-value credentials in git — there is no Dex client secret at all (public PKCE client, Decision 4's correction), and the Tailscale auth key (Decision 8) and `API_SERVER_KEY` are sealed, never plaintext in any commit
 
 ## Open Questions
 
-- **Constraint C — how does hermes trust `homekube-ca`?** Three candidates, in preference order: (a) a native custom-CA option in its self-hosted OIDC config, if one exists; (b) mount the CA PEM into the container and point `SSL_CERT_FILE`/`REQUESTS_CA_BUNDLE` at it; (c) Grafana's approach — browser-facing auth URL over HTTPS, back-channel token/userinfo over plaintext `http://dex.dex.svc.cluster.local:5556/dex`. **(c) is likely off the table** — it requires per-endpoint URL config, and hermes's OIDC surface appears issuer-only + discovery. Expect the answer to be (b); check (a) as a formality. Needs a docs check or an experiment before the chart is written.
+- ~~**Constraint C — how does hermes trust `homekube-ca`?**~~ **Resolved 2026-08-17** — option (b), mount the CA PEM + CA-bundle env vars. See "Implementation Status" above and [DECISIONS.md #008](../../DECISIONS.md#008).
 - Exact resource requests/limits — starting with a conservative guess (~512Mi/500m request, 1Gi/1cpu limit); revisit once real usage is observed (deferred item).
 - Health-probe paths for hermes's dashboard/gateway aren't documented anywhere I've found — starting with `tcpSocket` probes on `:8642` (hermes) and `:443` (nginx); `:9119` is unusable for probes since it binds loopback and kubelet probes the pod IP. Tighten if hermes ships real `/healthz`-style endpoints.
 - Whether the chart's version should track upstream image tags 1:1 or pin more conservatively — not blocking MVP.
