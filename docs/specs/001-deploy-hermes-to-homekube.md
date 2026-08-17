@@ -1,14 +1,14 @@
 # Spec 001 — Deploy Hermes Agent to homekube
 
-**Status:** In Progress — Phase 1 (chart build) complete; Phase 2 (secrets, homekube-apps, live rollout) not started
+**Status:** In Progress — Phase 1 (chart build) complete; Phase 2 in progress (credentials sealed; push, homekube-apps, live rollout not started)
 **Date:** 2026-08-14
-**Revised:** 2026-08-16 — review pass against the live cluster, plus a same-day second pass fixing internal contradictions found in spec review; see "Revisions" below. **2026-08-17** — chart built and validated (`chart/`); Constraint C resolved; two spec assumptions corrected (no Dex client secret; wrong Tailscale state env var name). See "Implementation Status" below.
+**Revised:** 2026-08-16 — review pass against the live cluster, plus a same-day second pass fixing internal contradictions found in spec review; see "Revisions" below. **2026-08-17** — chart built and validated (`chart/`); Constraint C resolved; two spec assumptions corrected (no Dex client secret; wrong Tailscale state env var name). See "Implementation Status" below. **2026-08-18** — real `API_SERVER_KEY` and a reusable/tagged/non-ephemeral Tailscale auth key generated and sealed into the chart (rollout step 5 done).
 
-## Implementation Status (2026-08-17)
+## Implementation Status (2026-08-18)
 
-**Phase 1 — chart build: done.** `chart/` exists in this repo: `Chart.yaml`, `values.yaml`, and templates for the PVC, ConfigMap, SealedSecret shape, ServiceAccount/Role/RoleBinding + tailscale state Secret, cert-manager `Certificate`, three-container Deployment, and Services. `helm lint` and `helm template` + `kubectl apply --dry-run=client` (validated against the live cluster's actual API schema) both pass clean. Nothing has touched the live cluster or another repo — no live resources created, nothing committed.
+**Phase 1 — chart build: done.** `chart/` exists in this repo: `Chart.yaml`, `values.yaml`, and templates for the PVC, ConfigMap, SealedSecret shape, ServiceAccount/Role/RoleBinding + tailscale state Secret, cert-manager `Certificate`, three-container Deployment, and Services. `helm lint` and `helm template` + `kubectl apply --dry-run=client` (validated against the live cluster's actual API schema) both pass clean. Nothing has touched the live cluster or another repo.
 
-**Phase 2 — not started.** Generating real credentials, sealing them, pushing this repo, editing `homekube-apps`, and syncing ArgoCD are all still open — each is credential-bearing, cross-repo, or a live-cluster change, gated on explicit go-ahead per this repo's trust model. **Pick up at rollout step 5** below.
+**Phase 2 — in progress.** Rollout step 5 done 2026-08-18: real `API_SERVER_KEY` generated, a reusable/tagged (`tag:hermes`)/non-ephemeral Tailscale auth key minted, both sealed via `kubeseal --raw` for namespace `hermes`/name `hermes-secrets` directly into `chart/templates/sealedsecret.yaml`'s ciphertext values — plaintext never touched disk or git. Chart re-linted clean. Still open: pushing this repo, editing `homekube-apps`, and syncing ArgoCD — each is cross-repo or a live-cluster change, gated on explicit go-ahead per this repo's trust model. **Pick up at rollout step 6** below.
 
 **Resolved while building** (previously blocking "Open Questions" / constraints):
 - **Constraint C** (how hermes trusts `homekube-ca`): resolved as option (b) — mount the CA cert, set `NODE_EXTRA_CA_CERTS`/`SSL_CERT_FILE`/`REQUESTS_CA_BUNDLE`. Same fix homekube already uses for Homepage's ArgoCD widget. See [DECISIONS.md #008](../../DECISIONS.md#008).
@@ -177,8 +177,8 @@ New `applications/wave-03-apps/hermes.yaml` ArgoCD `Application`: git source →
 2. ~~Settle Constraint C ... confirm the OIDC callback path...~~ **Done 2026-08-17** — see "Implementation Status" / DECISIONS.md #008.
 3. ~~Get Aperture's tailnet IP for `hostAliases` (Constraint A).~~ **Done 2026-08-17** — `100.126.29.31`.
 4. ~~Build the chart in this repo; `helm lint` / `helm template` locally.~~ **Done 2026-08-17** — `chart/`, lint + template + dry-run-client all clean.
-5. **← Pick up here.** Generate `API_SERVER_KEY` and mint a reusable, tagged, non-ephemeral Tailscale auth key; seal both for namespace `hermes`. (No Dex client secret to generate — none exists, see Decision 4's correction.)
-6. **Push this repo's chart first** — the ArgoCD Application must not exist before its git source does, or it lands Unknown/Degraded and thrashes under `selfHeal` + `prune`.
+5. ~~Generate `API_SERVER_KEY` and mint a reusable, tagged, non-ephemeral Tailscale auth key; seal both for namespace `hermes`.~~ **Done 2026-08-18** — `API_SERVER_KEY` generated (`openssl rand -base64 32`), Tailscale auth key minted (reusable, `tag:hermes`, non-ephemeral), both sealed via `kubeseal --raw` straight into `chart/templates/sealedsecret.yaml`'s ciphertext values. (No Dex client secret to generate — none exists, see Decision 4's correction.)
+6. **← Pick up here.** Push this repo's chart first — the ArgoCD Application must not exist before its git source does, or it lands Unknown/Degraded and thrashes under `selfHeal` + `prune`.
 7. Land the homekube-apps changes (Dex static client + new `hermes.yaml` Application), sync, verify Dex serves the new client.
 8. Sync the hermes Application.
 9. Walk the acceptance list below.

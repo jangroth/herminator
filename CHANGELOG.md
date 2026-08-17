@@ -11,6 +11,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Entries
 - **Operational** — manual interventions, recoveries, one-off ops actions
 - **Decisions** — links to `DECISIONS.md` entries created on this day
 
+## 2026-08-18
+
+### Added
+
+- Generated `API_SERVER_KEY` (real value, `openssl rand -base64 32`) and sealed it into `chart/templates/sealedsecret.yaml` via `kubeseal --raw`, namespace `hermes`, name `hermes-secrets` — replaces `values.yaml`'s empty `sealedSecret.encryptedApiServerKey` placeholder.
+
+### Operational
+
+- Minted a reusable, tagged (`tag:hermes`), non-ephemeral Tailscale auth key for the hermes sidecar via the Tailscale admin console. Sealed the same way as `API_SERVER_KEY` (`sealedSecret.encryptedTsAuthKey`); plaintext never touched disk or was committed. Chart re-linted clean with both ciphertexts in place. Spec 001 rollout step 5 done — next is pushing this repo (step 6) before touching `homekube-apps`.
+
 ## 2026-08-17
 
 ### Added
