@@ -15,7 +15,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Entries
 
 ### Fixed
 
-- `chart/templates/deployment.yaml`: hermes container used `command: ["gateway", "run"]`, which replaces the image's ENTRYPOINT and crashlooped with `exec: "gateway": executable file not found in $PATH`. Changed to `args:`, keeping the image's own entrypoint dispatcher intact.
+- `chart/templates/deployment.yaml`: hermes container used `command: ["gateway", "run"]`, which replaces the image's ENTRYPOINT and crashlooped with `exec: "gateway": executable file not found in $PATH`. Changed to `args:`, keeping the image's own entrypoint dispatcher intact. Bumps chart to 0.1.1.
+- `chart/templates/configmap.yaml`: nginx forwarded the external Host header (`192.168.86.246`) straight through to the loopback-bound dashboard, which rejected it with "Invalid Host header" — the dashboard's DNS-rebinding guard requires Host to match `HERMES_DASHBOARD_HOST`/`PORT` (`127.0.0.1:9119`). Pinned `proxy_set_header Host 127.0.0.1:9119;`, moved the original host to `X-Forwarded-Host`. Bumps chart to 0.1.2.
 
 ## 2026-08-18
 
