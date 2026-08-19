@@ -31,7 +31,8 @@ spec:
         - name: hermes
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          command: ["gateway", "run"]
+          # args, not command — the image's ENTRYPOINT dispatcher must stay in place.
+          args: ["gateway", "run"]
           env:
             - name: HERMES_UID
               value: "1000"

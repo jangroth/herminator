@@ -11,6 +11,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Entries
 - **Operational** — manual interventions, recoveries, one-off ops actions
 - **Decisions** — links to `DECISIONS.md` entries created on this day
 
+## 2026-08-19
+
+### Fixed
+
+- `chart/templates/deployment.yaml`: hermes container used `command: ["gateway", "run"]`, which replaces the image's ENTRYPOINT and crashlooped with `exec: "gateway": executable file not found in $PATH`. Changed to `args:`, keeping the image's own entrypoint dispatcher intact.
+
 ## 2026-08-18
 
 ### Added
