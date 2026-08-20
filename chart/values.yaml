@@ -7,6 +7,9 @@ namespace: hermes
 
 vip: 192.168.86.246
 
+# Cluster pod network (kubeadm ClusterConfiguration).
+podCidr: 10.244.0.0/16
+
 dashboard:
   # Workaround for https://github.com/NousResearch/hermes-agent/issues/42780 —
   # set directly in config.yaml rather than relying on HERMES_DASHBOARD_PUBLIC_URL.

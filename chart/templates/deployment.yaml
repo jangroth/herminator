@@ -142,6 +142,15 @@ spec:
             # the 192.168.86.240/28 VIPs (including Dex) out over the tailnet.
             - name: TS_EXTRA_ARGS
               value: "--shields-up"
+          # Replies to tailnet-sourced VIP clients must return via Cilium (eth0),
+          # not the sidecar's tailscale0 — pod-sourced traffic bypasses table 52.
+          lifecycle:
+            postStart:
+              exec:
+                command:
+                  - sh
+                  - -c
+                  - "ip rule del pref 5000 2>/dev/null; ip rule add pref 5000 from {{ .Values.podCidr }} lookup main"
           volumeMounts:
             - name: dev-net-tun
               mountPath: /dev/net/tun
