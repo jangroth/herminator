@@ -2,6 +2,16 @@
 
 Newest decision first. Captures **why**. See `CHANGELOG.md` for **what was done**.
 
+## 009 — config.yaml is seeded once from the ConfigMap, then owned by the runtime (2026-08-21)
+
+**Decision:** the chart's `config.yaml` is no longer live-mounted into the hermes container. An init container copies it from the `hermes-config` ConfigMap onto the PVC (`/opt/data/config.yaml`) only when no file exists there yet; from then on the running instance owns and rewrites it (`chown 1000:1000` so the hermes uid can write).
+
+**Rationale:** hermes is designed to rewrite its own config at runtime — the dashboard's model-assignment save path calls `save_config` → `atomic_yaml_write` → `os.replace`, which requires a normal writable file in a writable directory. The previous ConfigMap `subPath` mount made the file immutable, so `POST /api/model/set` always failed with `EROFS`. Seeding into the data dir matches how hermes runs on a normal install.
+
+**Trade-offs accepted:** GitOps immutability for this one file — chart-side `config.yaml` changes (e.g. a new Dex issuer or `public_url`) no longer propagate to a running instance; runtime state wins. Escape hatch: edit the file in-pod, or delete `/opt/data/config.yaml` and restart the pod to re-seed (loses runtime edits). A boot-time merge of seed over runtime state was rejected: extra tooling in the init container plus per-key ambiguity about which side wins, for a single-instance homelab deployment.
+
+---
+
 ## 008 — hermes trusts `homekube-ca` via a mounted CA cert + CA-bundle env vars, not a native config option (2026-08-17)
 
 **Decision:** Constraint C (Spec 001) is resolved as option (b): the chart's `configmap.yaml` carries `homekube-ca-secret`'s `ca.crt` as a literal, mounted into the hermes container at `/etc/ssl/certs/homekube/homekube-ca.crt`, with `NODE_EXTRA_CA_CERTS`, `SSL_CERT_FILE`, and `REQUESTS_CA_BUNDLE` all pointed at it.

@@ -27,6 +27,22 @@ spec:
           hostnames:
             - {{ .Values.aperture.baseUrl | trimPrefix "http://" | trimSuffix "/v1" }}
 
+      initContainers:
+        # Seed config.yaml onto the PVC once; hermes owns and rewrites it after that.
+        - name: seed-config
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - sh
+            - -c
+            - '[ -f /opt/data/config.yaml ] || { cp /seed/config.yaml /opt/data/config.yaml && chown 1000:1000 /opt/data/config.yaml; }'
+          volumeMounts:
+            - name: data
+              mountPath: /opt/data
+            - name: config
+              mountPath: /seed
+              readOnly: true
+
       containers:
         - name: hermes
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
@@ -73,9 +89,6 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /opt/data
-            - name: config
-              mountPath: /opt/data/config.yaml
-              subPath: config.yaml
             - name: ca-cert
               mountPath: /etc/ssl/certs/homekube
               readOnly: true
