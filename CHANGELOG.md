@@ -15,6 +15,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Entries
 
 ### Fixed
 
+- `chart/templates/deployment.yaml`: 0.1.7 rollout served a 502 — a 0-byte `config.yaml` stub already existed on the PVC (hidden under the old `subPath` mount), the init container's `[ -f ]` guard skipped seeding, and hermes fail-closed refused the `0.0.0.0` bind with an empty config (no OAuth provider). Guard changed to `[ -s ]` (seed when missing *or* empty). Bumps chart to 0.1.8.
+
 - `chart/templates/deployment.yaml`: "Failed to save model assignment" — `POST /api/model/set` hit `OSError: Read-only file system` because `config.yaml` was a ConfigMap `subPath` mount, immutable while hermes rewrites its config at runtime. Replaced with a `seed-config` init container that copies the ConfigMap onto the PVC only when absent; the runtime owns the file after that. See [DECISIONS.md #009](DECISIONS.md#009). Bumps chart to 0.1.7.
 
 - `chart/templates/deployment.yaml`: VIP unreachable from any tailnet-sourced client (browser/curl on darth timed out; Wi-Fi clients unaffected) — once 0.1.4 got the tailscale sidecar healthy, its policy routing (`from all lookup 52`) sent the pod's replies to `100.x` client IPs out the sidecar's own `tailscale0` instead of back via Cilium, breaking the handshake asymmetrically. Added a `postStart` hook on the sidecar: `ip rule add pref 5000 from <podCidr> lookup main`, so pod-sourced (DNATed service) replies return via eth0 while sidecar-sourced Aperture traffic keeps using table 52. Verified live: VIP 302s from darth in 0.2s, Aperture still 200. Bumps chart to 0.1.6.
