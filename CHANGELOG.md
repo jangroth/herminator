@@ -11,6 +11,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Entries
 - **Operational** — manual interventions, recoveries, one-off ops actions
 - **Decisions** — links to `DECISIONS.md` entries created on this day
 
+## 2026-08-21
+
+### Fixed
+
+- `chart/templates/deployment.yaml` + `configmap.yaml`: dashboard served with auth disabled (`__HERMES_AUTH_REQUIRED__=false`) and chat WS reconnect-looped with code 1006 — the loopback bind (`HERMES_DASHBOARD_HOST=127.0.0.1`) made hermes classify itself as local/trusted, disabling the Dex OAuth gate and applying loopback-only WS Origin rules that rejected the browser (`origin_mismatch`). Bound the dashboard to `0.0.0.0` so the gate engages (Decision 001), reverted the 0.1.2 Host pinning (unneeded on a non-loopback bind), and added the missing nginx WS upgrade headers. Bumps chart to 0.1.5.
+
 ## 2026-08-19
 
 ### Fixed

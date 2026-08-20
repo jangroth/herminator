@@ -40,10 +40,10 @@ spec:
               value: "1000"
             - name: HERMES_DASHBOARD
               value: "1"
-            # Loopback only — nginx is the only front door (Constraint B). kubelet
-            # probes the pod IP, so this port is never probed directly.
+            # Non-loopback bind engages the Dex OAuth gate (Decision 001); nginx
+            # remains the only externally exposed front door (Constraint B).
             - name: HERMES_DASHBOARD_HOST
-              value: "127.0.0.1"
+              value: "0.0.0.0"
             - name: HERMES_DASHBOARD_PORT
               value: "9119"
             - name: API_SERVER_ENABLED
