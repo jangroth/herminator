@@ -11,6 +11,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Entries
 - **Operational** — manual interventions, recoveries, one-off ops actions
 - **Decisions** — links to `DECISIONS.md` entries created on this day
 
+## 2026-08-22
+
+### Fixed
+
+- `DECISIONS.md` [007](DECISIONS.md#007) and `docs/specs/001-deploy-hermes-to-homekube.md`: both still described the dashboard as loopback-bound (`127.0.0.1`), the original Constraint B fix. That was reversed live on 2026-08-19 (chart 0.1.5, `herminator@cd67b75`) — loopback binding made hermes disable its own Dex OAuth gate, the opposite of the intent — but the reversal only ever landed in `CHANGELOG.md`, never back-filled into the decision log or spec. Amended both so a future reader doesn't trust the stale claim.
+
+### Operational
+
+- Walked and verified all 11 acceptance criteria in [Spec 001](docs/specs/001-deploy-hermes-to-homekube.md) against the live cluster: pods 3/3 Running, ArgoCD Synced/Healthy, no basic auth, shields-up confirmed by direct connection test from another tailnet device, PVC persisted across 8 rollouts, Recreate strategy holding, Tailscale sidecar reachable to Aperture with real LLM traffic and no orphaned devices, no plaintext credentials in git. Spec closed as Done. Noted an out-of-scope Telegram-plugin TLS issue (its egress incorrectly validates against `homekube-ca`, [#2](https://github.com/jangroth/herminator/issues/2)) as a follow-up candidate.
+
 ## 2026-08-21
 
 ### Fixed
