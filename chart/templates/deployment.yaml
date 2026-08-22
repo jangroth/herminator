@@ -28,6 +28,23 @@ spec:
             - {{ .Values.aperture.baseUrl | trimPrefix "http://" | trimSuffix "/v1" }}
 
       initContainers:
+        # Combined CA bundle (system store + homekube-ca) for Python-side TLS
+        # clients (SSL_CERT_FILE/REQUESTS_CA_BUNDLE fully override rather than
+        # extend — see Constraint C comment below and DECISIONS.md #010).
+        - name: build-ca-bundle
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - sh
+            - -c
+            - cat /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/homekube/homekube-ca.crt > /ca-bundle/ca-bundle.crt
+          volumeMounts:
+            - name: ca-cert
+              mountPath: /etc/ssl/certs/homekube
+              readOnly: true
+            - name: ca-bundle
+              mountPath: /ca-bundle
+
         # Seed config.yaml onto the PVC once; hermes owns and rewrites it after that.
         - name: seed-config
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
@@ -73,14 +90,20 @@ spec:
                 secretKeyRef:
                   name: hermes-secrets
                   key: API_SERVER_KEY
-            # CA trust for the OIDC back-channel to Dex (Constraint C). Runtime
-            # language isn't confirmed, so all three are set — harmless if unused.
+            # CA trust for the OIDC back-channel to Dex (Constraint C). The three
+            # vars are NOT equivalent: NODE_EXTRA_CA_CERTS extends Node's trust
+            # store, but SSL_CERT_FILE/REQUESTS_CA_BUNDLE fully *replace* the
+            # Python-side default (dropping the system CA store), which broke
+            # every non-Dex Python-backed egress (e.g. Telegram, issue #2).
+            # Those two point at a combined bundle instead; NODE_EXTRA_CA_CERTS
+            # can stay pointed at homekube-ca alone since it only adds to what's
+            # already trusted. See DECISIONS.md #010.
             - name: NODE_EXTRA_CA_CERTS
               value: /etc/ssl/certs/homekube/homekube-ca.crt
             - name: SSL_CERT_FILE
-              value: /etc/ssl/certs/homekube/homekube-ca.crt
+              value: /etc/ssl/certs/homekube-bundle/ca-bundle.crt
             - name: REQUESTS_CA_BUNDLE
-              value: /etc/ssl/certs/homekube/homekube-ca.crt
+              value: /etc/ssl/certs/homekube-bundle/ca-bundle.crt
           ports:
             - name: gateway
               containerPort: 8642
@@ -91,6 +114,9 @@ spec:
               mountPath: /opt/data
             - name: ca-cert
               mountPath: /etc/ssl/certs/homekube
+              readOnly: true
+            - name: ca-bundle
+              mountPath: /etc/ssl/certs/homekube-bundle
               readOnly: true
           readinessProbe:
             tcpSocket:
@@ -183,6 +209,8 @@ spec:
             items:
               - key: homekube-ca.crt
                 path: homekube-ca.crt
+        - name: ca-bundle
+          emptyDir: {}
         - name: tls
           secret:
             secretName: hermes-tls

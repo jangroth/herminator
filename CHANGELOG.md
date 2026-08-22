@@ -15,6 +15,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Entries
 
 ### Fixed
 
+- `chart/templates/deployment.yaml`: Telegram plugin failed every connection with `CERTIFICATE_VERIFY_FAILED` — Decision #008's `SSL_CERT_FILE`/`REQUESTS_CA_BUNDLE` (set for Dex's OIDC back-channel) fully replace, rather than extend, Python's default CA trust store, so the Python side of hermes trusted only `homekube-ca` and rejected Telegram's real certificate. Added a `build-ca-bundle` init container that concatenates the image's system CA bundle with `homekube-ca.crt` onto a new `emptyDir`, and re-pointed those two vars at the combined file; `NODE_EXTRA_CA_CERTS` (additive, not the culprit) is unchanged. See [DECISIONS.md #010](DECISIONS.md#010), [#2](https://github.com/jangroth/herminator/issues/2). Bumps chart to 0.1.9.
+
 - `DECISIONS.md` [007](DECISIONS.md#007) and `docs/specs/001-deploy-hermes-to-homekube.md`: both still described the dashboard as loopback-bound (`127.0.0.1`), the original Constraint B fix. That was reversed live on 2026-08-19 (chart 0.1.5, `herminator@cd67b75`) — loopback binding made hermes disable its own Dex OAuth gate, the opposite of the intent — but the reversal only ever landed in `CHANGELOG.md`, never back-filled into the decision log or spec. Amended both so a future reader doesn't trust the stale claim.
 
 ### Operational

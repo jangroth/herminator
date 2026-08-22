@@ -2,6 +2,16 @@
 
 Newest decision first. Captures **why**. See `CHANGELOG.md` for **what was done**.
 
+## 010 — CA trust for Dex uses a combined bundle for Python-side env vars, not the CA cert alone (2026-08-22)
+
+**Decision:** Decision #008's fix broke Telegram (and, by extension, any other Python-backed egress): `SSL_CERT_FILE` and `REQUESTS_CA_BUNDLE`, pointed solely at `homekube-ca.crt`, made Python's `ssl` module and `requests`/`urllib3` trust *only* the homekube CA, rejecting Telegram's real, publicly-signed certificate ([#2](https://github.com/jangroth/herminator/issues/2)). Fixed by adding a `build-ca-bundle` init container that concatenates the image's own system CA bundle (`/etc/ssl/certs/ca-certificates.crt`, confirmed present on `nousresearch/hermes-agent:latest`, Debian 13/trixie, arm64) with `homekube-ca.crt` onto a new `emptyDir` volume, and re-pointing `SSL_CERT_FILE`/`REQUESTS_CA_BUNDLE` at that combined file. `NODE_EXTRA_CA_CERTS` is left unchanged, still pointed at `homekube-ca.crt` alone.
+
+**Rationale:** the three CA-trust env vars from Decision #008 are not equivalent, and that was the actual bug. `NODE_EXTRA_CA_CERTS` is documented as *additive* — Node keeps its built-in trust store and extends it. `SSL_CERT_FILE` is an OpenSSL-level var: when set, `ssl.create_default_context()`'s `set_default_verify_paths()` loads *only* that file, dropping the system bundle entirely. `REQUESTS_CA_BUNDLE` has the same override (not extend) semantics for Python's `requests`. Confirmed the image ships both a Node runtime (`/usr/local/bin/node`) and a Python venv (`/opt/hermes/.venv/bin/python3`); Telegram's `_ssl.c:1029 CERTIFICATE_VERIFY_FAILED` error is a CPython `ssl`-module error, confirming the Python side is where the override bit. Two alternatives were considered and rejected: (a) figuring out which single CA var each plugin actually needs and setting only that one — rejected as fragile and plugin-specific, liable to break again the next time a new plugin with a different HTTP stack is added; (b) baking the system CA bundle into the ConfigMap alongside `homekube-ca.crt` — rejected because it duplicates a value the image already ships and would silently drift from the image's actual trust store on a base-image bump.
+
+**Trade-offs accepted:** one more init container per pod start (negligible cost, matches the existing `seed-config` pattern). The combined-bundle path depends on `ca-certificates.crt` living at its current Debian-standard location inside the image — if a future base-image bump moves or renames it, `build-ca-bundle` fails loudly (non-zero exit, pod stuck in `Init`) rather than silently reintroducing the bug, and re-verifying the path is a one-line `docker run` check.
+
+---
+
 ## 009 — config.yaml is seeded once from the ConfigMap, then owned by the runtime (2026-08-21)
 
 **Decision:** the chart's `config.yaml` is no longer live-mounted into the hermes container. An init container copies it from the `hermes-config` ConfigMap onto the PVC (`/opt/data/config.yaml`) only when no file exists there yet; from then on the running instance owns and rewrites it (`chown 1000:1000` so the hermes uid can write).
