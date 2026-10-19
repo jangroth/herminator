@@ -8,6 +8,8 @@ metadata:
     argocd.argoproj.io/sync-options: Prune=false
   labels:
     app.kubernetes.io/name: hermes
+    recurring-job.longhorn.io/source: enabled
+    recurring-job.longhorn.io/hermes-daily-backup: enabled
 spec:
   accessModes:
     - ReadWriteOnce
