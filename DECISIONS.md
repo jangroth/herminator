@@ -2,6 +2,16 @@
 
 Newest decision first. Captures **why**. See `CHANGELOG.md` for **what was done**.
 
+## 012 — Image versions are pinned in homekube-apps and bumped by Renovate, not floated on `latest` (2026-10-21)
+
+**Decision:** The Hermes and Tailscale image tags are pinned in the `homekube-apps` `hermes` Application (`helm.valuesObject`), tracked there by a Renovate regex custom manager restricted to plain `vX.Y.Z` tags. The chart no longer carries a default: `image.tag` and `tailscale.tag` are `required`, so rendering without the override fails. Spec and design: `openspec/changes/pin-hermes-image-via-renovate/`.
+
+**Rationale:** with `latest` and `pullPolicy: IfNotPresent` the running version was whatever a node last cached. The live pod ran Hermes v0.20.4 and Tailscale 1.104.1 while the registry's `latest` was v0.22.2 and v1.104.2, and v0.20.4 was never published as a tag. Putting the pin next to the ArgoCD wiring keeps version control in the repo where Renovate already runs and where the Application is owned, with no second Renovate config here. The built-in `argocd` manager does not read `valuesObject`, so the custom manager is required (verified by dry run).
+
+**Trade-offs accepted:** the first pin was a real two-minor upgrade (v0.20.4 to v0.22.2), done behind the nightly Longhorn backup; rollback of a bump that migrated `config.yaml` or PVC state means a restore, not just a revert. v0.22.2 ignores the `type` and `headers` keys in the runtime-owned `providers.aperture` config (Decision 009 drift); cosmetic so far. Digest pinning was tried (`pinDigests`) and proposed nothing with the custom manager; deferred. The hardcoded `nginx:stable` init container is still unmanaged.
+
+---
+
 ## 011 — Environment changes hermes initiates at runtime rely on `$HOME`/`/opt/data` conventions, not chart changes (2026-08-22)
 
 **Decision:** No chart change. When hermes itself installs a binary, caches a package, or configures GitHub auth as part of doing agent work (`pip install --user`, `uv tool install`, `npm install -g`, `git config --global`, `gh auth login`, etc.), we rely on it landing under `$HOME`/`/opt/data` by virtue of how the image and hermes's own `github-auth` skill already behave — nothing further is engineered on top.
