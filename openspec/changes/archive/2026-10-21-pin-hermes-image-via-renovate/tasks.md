@@ -16,13 +16,13 @@
 ## 3. Remove the floating default in this repo
 
 - [x] 3.1 Make `image.tag` and `tailscale.tag` required in `chart/values.yaml` and `deployment.yaml`, and drop `appVersion` from `Chart.yaml`; verify `helm template` without overrides fails and with overrides succeeds
-- [ ] 3.2 Pin the image in `local/docker-compose.yml`; verify the local stack starts
-- [ ] 3.3 Bump chart version to 0.1.10 and verify ArgoCD syncs clean with no pod change (the images were already pinned in 2.2)
+- [ ] 3.2 Pin the image in `local/docker-compose.yml`; verify the local stack starts (skipped: compose config validated only, stack not started)
+- [x] 3.3 Bump chart version to 0.1.10 and verify ArgoCD syncs clean with no pod change (the images were already pinned in 2.2)
 
 ## 4. Record
 
 - [x] 4.1 Add Decision 012 to `DECISIONS.md` and an entry to `CHANGELOG.md`; verify both link to this change
-- [ ] 4.2 Add matching entries to homekube's `DECISIONS.md` and `CHANGELOG.md`; verify they reference the herminator decision
+- [x] 4.2 Add matching entries to homekube's `DECISIONS.md` and `CHANGELOG.md`; verify they reference the herminator decision
 
 ## Workflow follow-up
 
