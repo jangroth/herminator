@@ -11,6 +11,25 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Entries
 - **Operational** — manual interventions, recoveries, one-off ops actions
 - **Decisions** — links to `DECISIONS.md` entries created on this day
 
+## 2026-10-21
+
+### Added
+
+- OpenSpec (`openspec/`, `@fission-ai/openspec` 1.14.3) initialised for Claude Code; first change `pin-hermes-image-via-renovate`. Existing `docs/specs/` and `CLAUDE.md` workflow left in place for now.
+
+### Changed
+
+- `chart/`: `image.tag` and `tailscale.tag` are now empty by default and `required` in `deployment.yaml`; `appVersion: latest` dropped; chart bumped to 0.1.10. The pins live in `homekube-apps` (jangroth/homekube-apps#91), where Renovate tracks them. See [DECISIONS.md #012](DECISIONS.md#012).
+- `local/docker-compose.yml`: image pinned to `v0.22.2`.
+
+### Operational
+
+- Rolled out Hermes v0.22.2 and Tailscale 1.104.2 (previously v0.20.4 and 1.104.1 from cached `latest`) via homekube-apps#91. Verified: ArgoCD Synced/Healthy, pod 3/3, Telegram connected, Dex gate active, dashboard LLM reply confirmed. Restore point was the 2026-10-20 16:00 UTC Longhorn backup.
+
+### Decisions
+
+- [012](DECISIONS.md#012) — image versions pinned in homekube-apps and bumped by Renovate.
+
 ## 2026-08-22
 
 ### Fixed

@@ -32,7 +32,7 @@ spec:
         # clients (SSL_CERT_FILE/REQUESTS_CA_BUNDLE fully override rather than
         # extend — see Constraint C comment below and DECISIONS.md #010).
         - name: build-ca-bundle
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          image: "{{ .Values.image.repository }}:{{ required "image.tag must be set (pinned in homekube-apps)" .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           command:
             - sh
@@ -47,7 +47,7 @@ spec:
 
         # Seed config.yaml onto the PVC once; hermes owns and rewrites it after that.
         - name: seed-config
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          image: "{{ .Values.image.repository }}:{{ required "image.tag must be set (pinned in homekube-apps)" .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           command:
             - sh
@@ -62,7 +62,7 @@ spec:
 
       containers:
         - name: hermes
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          image: "{{ .Values.image.repository }}:{{ required "image.tag must be set (pinned in homekube-apps)" .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           # args, not command — the image's ENTRYPOINT dispatcher must stay in place.
           args: ["gateway", "run"]
@@ -157,7 +157,7 @@ spec:
             {{- toYaml .Values.resources.nginx | nindent 12 }}
 
         - name: tailscale
-          image: "{{ .Values.tailscale.image }}:{{ .Values.tailscale.tag }}"
+          image: "{{ .Values.tailscale.image }}:{{ required "tailscale.tag must be set (pinned in homekube-apps)" .Values.tailscale.tag }}"
           securityContext:
             capabilities:
               add:

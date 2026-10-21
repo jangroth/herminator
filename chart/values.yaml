@@ -1,6 +1,6 @@
 image:
   repository: nousresearch/hermes-agent
-  tag: latest
+  tag: ""
   pullPolicy: IfNotPresent
 
 namespace: hermes
@@ -47,7 +47,7 @@ aperture:
 
 tailscale:
   image: tailscale/tailscale
-  tag: latest
+  tag: ""
   hostname: hermes-aperture
   stateSecretName: hermes-tailscale-state
 
