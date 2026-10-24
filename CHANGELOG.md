@@ -11,6 +11,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Entries
 - **Operational** — manual interventions, recoveries, one-off ops actions
 - **Decisions** — links to `DECISIONS.md` entries created on this day
 
+## 2026-10-24
+
+### Changed
+
+- `CLAUDE.md`: working approach now points at OpenSpec (propose, apply, archive; `openspec validate --strict` before PRs); `docs/specs/` marked legacy. Todo issues must carry both `todo` and `agent-safe`.
+- `CLAUDE.md`: `DECISIONS.md` now holds only decisions that live outside a single OpenSpec change; decisions within a change stay in its `design.md`. OpenSpec proposals link their source issue, and archive PRs close it.
+
 ## 2026-10-21
 
 ### Added
