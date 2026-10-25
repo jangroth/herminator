@@ -17,6 +17,6 @@ Deployed to homekube via ArgoCD. Image versions are pinned in `homekube-apps` an
 
 ## Related
 
-- Cluster: `homekube` (`/Users/jan/Projects/kube/homekube`) — ArgoCD app-of-apps GitOps cluster this chart deploys onto.
+- Cluster: [`homekube`](https://github.com/jangroth/homekube) (`/Users/jan/Projects/kube/homekube`) — ArgoCD app-of-apps GitOps cluster this chart deploys onto. The `hermes` Application and its image pins live in [`homekube-apps`](https://github.com/jangroth/homekube-apps).
 
 See [`CLAUDE.md`](CLAUDE.md) for the working approach.
