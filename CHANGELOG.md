@@ -11,6 +11,20 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Entries
 - **Operational** — manual interventions, recoveries, one-off ops actions
 - **Decisions** — links to `DECISIONS.md` entries created on this day
 
+## 2026-10-25
+
+### Added
+
+- `chart/`: `state-export` sidecar that pushes allowlisted Hermes state (`config.yaml`, `SOUL.md`, `memories/`, `cron/jobs.json`, `scripts/`, job output directories, non-bundled or modified skills) hourly to the private repo `jangroth/herminator-state`. Symlinks are never followed, and a betterleaks scan (`ghcr.io/betterleaks/betterleaks`, tag `required`, pinned in `homekube-apps`) gates every commit. Script in `chart/files/state-export/`; chart bumped to 0.1.11. OpenSpec change [`export-hermes-state`](openspec/changes/export-hermes-state/), issue [#9](https://github.com/jangroth/herminator/issues/9).
+
+### Changed
+
+- `README.md`: status reflects the deployed chart, Renovate-managed image pins and the state export; layout lists `openspec/` and marks `docs/specs/` as legacy.
+
+### Operational
+
+- Generated the `hermes-state-export` deploy key: the public half was added to `jangroth/herminator-state` with write access, and the private half was sealed as `STATE_EXPORT_SSH_KEY` in `hermes-secrets`. No plaintext copy was kept.
+
 ## 2026-10-24
 
 ### Changed
