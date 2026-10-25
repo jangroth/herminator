@@ -26,10 +26,10 @@
 
 ## 5. Rollout and verification
 
-- [ ] 5.1 Merge the homekube-apps change, then the chart change; verify ArgoCD is Synced/Healthy and the pod is Running with all containers ready
-- [ ] 5.2 Verify the first export landed in `herminator-state` and contains only allowlisted paths (no `.env`, `auth.json`, `sessions/`, `*.db`, `*.lock`)
-- [ ] 5.3 Verify isolation: the Hermes container cannot find the key in its filesystem or environment, `kubectl auth can-i get secret/hermes-secrets` for the service account is `no`, and a write under `/opt/data` from the sidecar fails
-- [ ] 5.4 Verify failure handling: point the sidecar at an unreachable remote (or wait for a natural failure), confirm it logs and retries, and that the pod stays Ready
+- [x] 5.1 Merge the homekube-apps change, then the chart change; verify ArgoCD is Synced/Healthy and the pod is Running with all containers ready
+- [x] 5.2 Verify the first export landed in `herminator-state` and contains only allowlisted paths (no `.env`, `auth.json`, `sessions/`, `*.db`, `*.lock`)
+- [x] 5.3 Verify isolation: the Hermes container cannot find the key in its filesystem or environment, `kubectl auth can-i get secret/hermes-secrets` for the service account is `no`, and a write under `/opt/data` from the sidecar fails
+- [x] 5.4 Verify failure handling: point the sidecar at an unreachable remote (or wait for a natural failure), confirm it logs and retries, and that the pod stays Ready
 
 ## 6. README
 

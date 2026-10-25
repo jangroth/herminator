@@ -4,7 +4,7 @@ Packaging and deploying [Hermes Agent](https://hermes-agent.nousresearch.com/) (
 
 ## Status
 
-Deployed to homekube via ArgoCD. Image versions are pinned in `homekube-apps` and bumped by Renovate ([DECISIONS.md #012](DECISIONS.md)). Hermes' readable runtime state (config, memories, cron jobs, scripts, custom skills) is exported hourly to the private repo [`jangroth/herminator-state`](https://github.com/jangroth/herminator-state).
+Deployed to homekube via ArgoCD. Image versions are pinned in `homekube-apps` and bumped by Renovate ([DECISIONS.md #012](DECISIONS.md)). Hermes' readable runtime state (config, memories, cron jobs, scripts, and skills not identical to their bundled copies) is exported hourly to the private repo [`jangroth/herminator-state`](https://github.com/jangroth/herminator-state).
 
 ## Layout
 
@@ -17,6 +17,6 @@ Deployed to homekube via ArgoCD. Image versions are pinned in `homekube-apps` an
 
 ## Related
 
-- Cluster: `homekube` (`/Users/jan/Projects/kube/homekube`) — ArgoCD app-of-apps GitOps cluster this chart deploys onto.
+- Cluster: [`homekube`](https://github.com/jangroth/homekube) (`/Users/jan/Projects/kube/homekube`) — ArgoCD app-of-apps GitOps cluster this chart deploys onto. The `hermes` Application and its image pins live in [`homekube-apps`](https://github.com/jangroth/homekube-apps).
 
 See [`CLAUDE.md`](CLAUDE.md) for the working approach.
