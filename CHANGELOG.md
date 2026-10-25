@@ -21,6 +21,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Entries
 ### Changed
 
 - `README.md`: status reflects the deployed chart, Renovate-managed image pins and the state export; layout lists `openspec/` and marks `docs/specs/` as legacy. Exported skills described as "not identical to their bundled copies" rather than "custom".
+- `CLAUDE.md`: new OpenSpec proposals are pushed straight away as draft PRs, and their source issue gets a `## Tracking` section linking the change folder, branch and draft PR (first applied to #12/#14 and #13/#15).
 
 ### Operational
 
