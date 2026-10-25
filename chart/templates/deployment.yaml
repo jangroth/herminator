@@ -60,6 +60,33 @@ spec:
               mountPath: /seed
               readOnly: true
 
+        - name: copy-betterleaks
+          image: "{{ .Values.stateExport.betterleaks.image }}:{{ required "stateExport.betterleaks.tag must be set (pinned in homekube-apps)" .Values.stateExport.betterleaks.tag }}"
+          command: ["cp", "/usr/bin/betterleaks", "/tools/betterleaks"]
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+          volumeMounts:
+            - name: state-export-tools
+              mountPath: /tools
+
+        # The image's hermes user is uid 10000 with home /opt/data; only the
+        # entrypoint remaps it. ssh needs a passwd entry for uid 1000, and its
+        # home must not be the Hermes-writable PVC.
+        - name: state-export-passwd
+          image: "{{ .Values.image.repository }}:{{ required "image.tag must be set (pinned in homekube-apps)" .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - sh
+            - -c
+            - sed 's#^hermes:.*#hermes:x:1000:1000::/work/home:/bin/sh#' /etc/passwd > /etc-export/passwd
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+          volumeMounts:
+            - name: state-export-etc
+              mountPath: /etc-export
+
       containers:
         - name: hermes
           image: "{{ .Values.image.repository }}:{{ required "image.tag must be set (pinned in homekube-apps)" .Values.image.tag }}"
@@ -196,6 +223,64 @@ spec:
           resources:
             {{- toYaml .Values.resources.tailscale | nindent 12 }}
 
+        # The only container with the deploy key. Hermes must never mount
+        # state-export-key, and shareProcessNamespace must stay unset, or Hermes
+        # could reach the key through /proc.
+        - name: state-export
+          image: "{{ .Values.image.repository }}:{{ required "image.tag must be set (pinned in homekube-apps)" .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["bash", "/etc/state-export/run.sh"]
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          env:
+            # The image's PATH includes /opt/data/.local/bin, which Hermes can write.
+            - name: PATH
+              value: /usr/local/bin:/usr/bin:/bin
+            - name: HOME
+              value: /work/home
+            - name: STATE_EXPORT_REMOTE
+              value: {{ .Values.stateExport.remote | quote }}
+            - name: STATE_EXPORT_BRANCH
+              value: {{ .Values.stateExport.branch | quote }}
+            - name: STATE_EXPORT_INTERVAL
+              value: {{ .Values.stateExport.intervalSeconds | quote }}
+            - name: STATE_EXPORT_PATHS
+              value: {{ join "\n" .Values.stateExport.paths | quote }}
+            - name: STATE_EXPORT_KEY_SOURCE
+              value: /etc/state-export-key/id_ed25519
+            - name: STATE_EXPORT_KEY
+              value: /work/ssh/id_ed25519
+            - name: GIT_SSH_COMMAND
+              value: "ssh -F /dev/null -i /work/ssh/id_ed25519 -o IdentitiesOnly=yes -o UserKnownHostsFile=/etc/state-export/known_hosts -o StrictHostKeyChecking=yes"
+          volumeMounts:
+            - name: data
+              mountPath: /opt/data
+              readOnly: true
+            - name: state-export-config
+              mountPath: /etc/state-export
+              readOnly: true
+            - name: state-export-key
+              mountPath: /etc/state-export-key
+              readOnly: true
+            - name: state-export-etc
+              mountPath: /etc/passwd
+              subPath: passwd
+              readOnly: true
+            - name: state-export-ssh
+              mountPath: /work/ssh
+            - name: state-export-tools
+              mountPath: /tools
+              readOnly: true
+            - name: state-export-work
+              mountPath: /work
+          resources:
+            {{- toYaml .Values.resources.stateExport | nindent 12 }}
+
       volumes:
         - name: data
           persistentVolumeClaim:
@@ -218,3 +303,24 @@ spec:
           hostPath:
             path: /dev/net/tun
             type: CharDevice
+        - name: state-export-config
+          configMap:
+            name: hermes-state-export
+        # Root-owned without fsGroup (which would chown the whole PVC), hence
+        # world-readable; run.sh copies it to state-export-ssh as 0600.
+        - name: state-export-key
+          secret:
+            secretName: hermes-secrets
+            defaultMode: 0444
+            items:
+              - key: STATE_EXPORT_SSH_KEY
+                path: id_ed25519
+        - name: state-export-ssh
+          emptyDir:
+            medium: Memory
+        - name: state-export-tools
+          emptyDir: {}
+        - name: state-export-etc
+          emptyDir: {}
+        - name: state-export-work
+          emptyDir: {}

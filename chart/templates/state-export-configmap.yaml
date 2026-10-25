@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hermes-state-export
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: hermes
+data:
+  run.sh: |
+{{ .Files.Get "files/state-export/run.sh" | indent 4 }}
+  export.sh: |
+{{ .Files.Get "files/state-export/export.sh" | indent 4 }}
+  # GitHub's published SSH host keys (api.github.com/meta).
+  known_hosts: |
+{{ .Files.Get "files/state-export/known_hosts" | indent 4 }}

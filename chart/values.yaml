@@ -51,12 +51,33 @@ tailscale:
   hostname: hermes-aperture
   stateSecretName: hermes-tailscale-state
 
-# API_SERVER_KEY and the tailscale auth key are real credentials — they ship only
+# API_SERVER_KEY, the tailscale auth key and the state-export deploy key are real credentials — they ship only
 # as SealedSecret ciphertext (templates/sealedsecret.yaml), never plaintext here.
 # Populated at deploy time via `kubeseal`.
 sealedSecret:
   encryptedApiServerKey: "AgCH10tSSZN9S8GT2OE4rrbBUNUs/1lntv20a5gYXk/ppEh9ChniDvrW92FT9/JrodmuKo4nmga9KaszsHPHW06O/jQWTimiPIfvsYBvr6JN1+gHqvenFJUx3DDhfLITtwlteAI85zUbdGBxyXWUeZAHqx2sZpOYoKB9qHlo4Bt2Mec1vavCpBUHCn4p+w3RNGR24yjpQ7pvOncaH7zgST+qgJlbIR6J5mqtVuFcK6YGxFOqDClBz6IuMOTx48GmVWDw8zhkyHez3S8C9eA3jd2LNe7yyPI+cNpYit8V+dTqv6W6moatLASEGk9h45g/t2WKkWF+PbAvlkPBSBxycqRUcZPdUDPV1zp6GYw7tP9dpfpW8kE7Hd3/rrl8C3h+09goc4Kt8xereXoUE5r52OQDW5vqVncWfvnXatzHwPW5u3fNixTARYBOBkmL3Sbm8hyfuTCqRgximYN0E4+XXl6TpAAGo/HEamzQAfI6SgBcF9FV7wxkZVFw6GtawufM2jY/XG63rVm0jqco4SNm5KdfUEo73MaapS/SjUIc3pgXVfKdDfySpVyFQst0KT0TXvGanNMPD0jP/lgP2/br5Rn6akdc/A4gizaueJ9nUMvwaQYkI95Rlg7dwcC7oubwDfduQArKZe2p/yuMkJiY76pymOramemgyyU3EMNTSIOYjAjBipCDyk4/MoEbuo95PfUcWIkhTmSq0l4oLNDvEOAfs9clDsO5UnOyhSdmPeM8v5lAjLx5wzrVYdlTyQ=="
   encryptedTsAuthKey: "AgANsKQKbxHFEblUxX3RjV+0bxg8WUWYBLfFYa+5LGZ06xA3EHgTwvkYU95RWjxnrlIphDXJ4wgntjscOGzA2d9s3gUf/5QHYawdpmTeyBqz2BpbnOtZ8ZTT9V33xhu65okK2/XzF1qaiY+Zf1u+siMOv0GIsi3MuWinvB7uYZFA74TqKLSKk4z9JPD0bYoQdUYDx6MntXpT2qsRLqh907AHehyUWu5iAOhwmzDocE5zrg3HHcnx2qUdJRjThmwGRGzz8WBZno8KskDSiKDgygBbUTkCcyC4dVb96Ioj0fW6XgvtK2D/aEH2ePyPKm9YM1RF+4QstY7HWNZoEddNlHJh2CeP9kFo6SifZ6VhadWN1AdaCKWCrAB9wikkWxozuqe1xCJJm8e44clXVZWU8vevB4w3YeDZ+o4kZdHM+stKgE/lgJCfdUoTdSyVp/3ac2rbThn7JOYiiJn4cBvLBIjU33qMcDNPlIqkgl6sMW66/JIq6JuJs8NMq6RJPJn5R6Po+R9/ef5Tjezy1sWgQ4yFaZHH6SAgFFrj9rkj6dkW7dy7k07Liz5jrQ0rIiMd1aDE3RGLlS12droNQeOZRaH2WR8EvyPWpaS51838c+l/58oWifczXyVWUTxPV64JHfkH6O6KNc+waPFEyIGwxu35dr5gzCQ+w7NTNrk8RAcTycb3hyMtX9SXKAVOGsqcXDOJoROPz513DwbLNqGiUJIUdYRUChuQ74aPV+4cWavxHfNUvz6NU7IGqE5k4Jdu2T7kat8ZcWDY9qW2pNZe"
+  # Write deploy key for stateExport.remote; mounted only into the state-export sidecar.
+  encryptedStateExportSshKey: "AgA8dGn4WLuC51Mcl3Ce6rEnvmlre04FjS6zxxqILriU3bb52FVlBoc1dvqhbT5HaFX6FEsMOUB1B05qAAnhr/goEej6U/nmH8GQcQM5r++RruFvEJHs3g+e4ZzELk2Nn6vPanzm0Ixqfoc2TwDSwaujBvXiY7bjgcbVt0+JCfsmLC6P1yEVmofNddLAMye0LN6y5ET0CUecHTg2OdXGC/rkCgt3RbDIGzv0/Ii6V+WmRPubPvTNduIpRKaMhAi0iPR2KmFcCVTukm9oGoft6AtFLvinGfKIkdoo0Fwz1LCIS3Tv2rUVU6q7W69B/F665TsvpoZT0PrSuhiSR6KGVItSWCOG8SHAOsayBlIY2l5qqo2DncJycsSDQ0rYQ68IMRT4eaSg4sZX/g7+rXI9ltdX2UYwE3OlgTVKx6MJ1zQqjufqkHXf7bHvN5S45xpY4jlWr1p1Gtkz78zHygGCP4K0s9t/6So1ELSb6IFpSjut0M8RHLLqLaXB/qvWw1mQp0GxXF9F7WngoxH7KouXgMSniYtm3gfzxnHbL30UE3P898gWAhFEOvHbRs9l/DR778tUKIJ+7cg7t9SjEWo4VSTXpGkKG7XxI4RVrwzXEe8x8jxUP32Wrkwhc5Ij9n5Ili3z04DKljt2Kzedhur7fmKg/GH7ALouk9UFpkv+ebxy2yApr4n2q4zKN9dnzR/L9iuE1QVbrbfs4E/UMqNT8MneqqiHYe7sHNDairfC66AVgEpmUjHENDznOibsGEHFK/P9HH3ojTgwD7lRJVQn+LUegm8RPSgeEZMI6jrNPutkpJIrNQldrDpiJSD03PiIs6zlAJQ7BLwz/zw6e7Te2y81Uq34ocLY9OORXdrVreYc0kS+xW3u3Ff6qI4gS3XOUb0zrmhxPpKa9lUEnBBTPzSKTXGX+sX/vcq+W12dUT8t2eN8zk3xy6Pf120SBLfP2DTyC5mu8g3hVJWYU/33yAHVyRChBUGuwFVSkXQGUjNeezYq2Jy4lEu5LGvt9+JETrsPFM4xMTNm/M5trOgSx65zu8hhWJ+G5i7LsVPYl7CFGd7N14pIvnMmd29pKIQmZbg8Unbn/GUfyTQ1GWV7AonGn6gxeuzuq4ux+H1YTNRvy4MAMW811ive7h2ZdnQXZoImLL+qusivfpgF2fjw4fHc9HMi+i8u8PB9TfWHyjSolEdLJdoCZzsPA7HtguPrjwBORlegGG9L2Dr6bxX1hCXoP95yCgSQffkHLRE="
+
+# Read-only export of allowlisted Hermes state to a private repo (openspec state-export).
+stateExport:
+  remote: git@github.com:jangroth/herminator-state.git
+  branch: main
+  intervalSeconds: 3600
+  # Relative to /opt/data. Skills are added separately: only those absent from or
+  # differing from the image's bundled copies.
+  paths:
+    - config.yaml
+    - SOUL.md
+    - memories
+    - cron/jobs.json
+    - scripts
+    - morning-briefing
+    - nvim-tips
+  betterleaks:
+    image: ghcr.io/betterleaks/betterleaks
+    tag: ""
 
 persistence:
   size: 5Gi
@@ -84,3 +105,10 @@ resources:
     limits:
       cpu: 200m
       memory: 128Mi
+  stateExport:
+    requests:
+      cpu: 10m
+      memory: 64Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
