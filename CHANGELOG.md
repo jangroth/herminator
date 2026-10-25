@@ -15,13 +15,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Entries
 
 ### Added
 
-- `chart/`: `state-export` sidecar that pushes allowlisted Hermes state (`config.yaml`, `SOUL.md`, `memories/`, `cron/jobs.json`, `scripts/`, job output directories, non-bundled or modified skills) hourly to the private repo `jangroth/herminator-state`. Symlinks are never followed, and a betterleaks scan (`ghcr.io/betterleaks/betterleaks`, tag `required`, pinned in `homekube-apps`) gates every commit. Script in `chart/files/state-export/`; chart bumped to 0.1.11. OpenSpec change [`export-hermes-state`](openspec/changes/export-hermes-state/), issue [#9](https://github.com/jangroth/herminator/issues/9).
+- `chart/`: `state-export` sidecar that pushes allowlisted Hermes state (`config.yaml`, `SOUL.md`, `memories/`, `cron/jobs.json`, `scripts/`, job output directories, non-bundled or modified skills) hourly to the private repo `jangroth/herminator-state`. Symlinks are never followed, and a betterleaks scan (`ghcr.io/betterleaks/betterleaks`, tag `required`, pinned in `homekube-apps`) gates every commit. Script in `chart/files/state-export/`; chart bumped to 0.1.11. OpenSpec change [`export-hermes-state`](openspec/changes/archive/2026-10-25-export-hermes-state/), issue [#9](https://github.com/jangroth/herminator/issues/9).
+- `openspec/specs/state-export/`: new capability spec, from archiving `export-hermes-state`.
 
 ### Changed
 
-- `README.md`: status reflects the deployed chart, Renovate-managed image pins and the state export; layout lists `openspec/` and marks `docs/specs/` as legacy.
+- `README.md`: status reflects the deployed chart, Renovate-managed image pins and the state export; layout lists `openspec/` and marks `docs/specs/` as legacy. Exported skills described as "not identical to their bundled copies" rather than "custom".
 
 ### Operational
+
+- Verified the state-export rollout: ArgoCD Synced/Healthy and all 4 containers ready. The first export (`herminator-state@3aaaaed`) holds 217 files: only allowlisted paths and 26 skills, with no secrets, databases, locks or symlinks. The Hermes container has no access to the key (file, env or API), and the sidecar's `/opt/data` mount is read-only. A failing remote is logged and retried without affecting readiness. Known issue: the failure log line reports `exit 0` instead of the real exit code.
 
 - Generated the `hermes-state-export` deploy key: the public half was added to `jangroth/herminator-state` with write access, and the private half was sealed as `STATE_EXPORT_SSH_KEY` in `hermes-secrets`. No plaintext copy was kept.
 
