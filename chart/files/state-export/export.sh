@@ -9,6 +9,8 @@ REMOTE=${STATE_EXPORT_REMOTE:?}
 BRANCH=${STATE_EXPORT_BRANCH:-main}
 BETTERLEAKS=${STATE_EXPORT_BETTERLEAKS:-/tools/betterleaks}
 PATHS=${STATE_EXPORT_PATHS:?}
+TAG=${HERMES_IMAGE_TAG:?}
+NOW=$(date -u +%FT%TZ)
 
 log() { printf '%s %s\n' "$(date -u +%FT%TZ)" "$*" >&2; }
 
@@ -34,6 +36,9 @@ copy_file() {
 
 copy_path() {
   local rel=$1 src=$SRC/$1 f
+  local -a prune=(-name .git -o -name __pycache__)
+  # Skill metadata (.hub, .archive, .bundled_manifest, ...) isn't skill content.
+  [[ $rel == skills || $rel == skills/* ]] && prune=(-name '.*' -o -name __pycache__)
   if [[ -z $rel || $rel == /* || /$rel/ == */../* ]]; then
     log "invalid path: $rel"
     return 1
@@ -50,24 +55,10 @@ copy_path() {
     done < <(find "$src" -type l -print0)
     while IFS= read -r -d '' f; do
       copy_file "${f#"$SRC"/}"
-    done < <(find "$src" \( -name .git -o -name __pycache__ \) -prune -o -type f -print0)
+    done < <(find "$src" \( "${prune[@]}" \) -prune -o -type f -print0)
   else
     log "missing: $rel"
   fi
-}
-
-copy_skills() {
-  local md dir rel
-  [[ -d $SRC/skills ]] && ! has_symlink skills || return 0
-  while IFS= read -r -d '' md; do
-    dir=${md%/SKILL.md}
-    rel=${dir#"$SRC"/skills/}
-    if [[ -d $BUNDLED/$rel ]] &&
-      diff -rq --no-dereference -x '*.lock' -x __pycache__ "$BUNDLED/$rel" "$dir" >/dev/null 2>&1; then
-      continue
-    fi
-    copy_path "skills/$rel"
-  done < <(find "$SRC/skills" -mindepth 1 -name '.*' -prune -o -name SKILL.md -type f -print0)
 }
 
 ahead() {
@@ -85,7 +76,8 @@ find "$WORK" -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
 while IFS= read -r p; do
   [[ -n $p ]] && copy_path "$p"
 done <<<"$PATHS"
-copy_skills
+python3 -I "$(dirname "$0")/overview.py" "$SRC" "$BUNDLED" "$TAG" "$NOW" \
+  < <(git -C "$WORK" show HEAD:README.md 2>/dev/null) >"$WORK/README.md"
 # Catches files swapped for symlinks between find and cp.
 find "$WORK" -type l ! -path "$WORK/.git/*" -print -delete
 
@@ -101,7 +93,7 @@ if ! git -C "$WORK" diff --cached --quiet; then
   esac
   git -C "$WORK" -c user.name=hermes-state-export \
     -c user.email=hermes-state-export@users.noreply.github.com \
-    commit -q -m "export $(date -u +%FT%TZ)"
+    commit -q -m "export $NOW (hermes $TAG)"
 fi
 
 if ahead; then

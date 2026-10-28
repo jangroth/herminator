@@ -65,14 +65,14 @@ stateExport:
   remote: git@github.com:jangroth/herminator-state.git
   branch: main
   intervalSeconds: 3600
-  # Relative to /opt/data. Skills are added separately: only those absent from or
-  # differing from the image's bundled copies.
+  # Relative to /opt/data. Under skills/, entries starting with "." are skipped.
   paths:
     - config.yaml
     - SOUL.md
     - memories
     - cron/jobs.json
     - scripts
+    - skills
     - morning-briefing
     - nvim-tips
   betterleaks:

@@ -251,6 +251,8 @@ spec:
               value: {{ .Values.stateExport.intervalSeconds | quote }}
             - name: STATE_EXPORT_PATHS
               value: {{ join "\n" .Values.stateExport.paths | quote }}
+            - name: HERMES_IMAGE_TAG
+              value: {{ .Values.image.tag | quote }}
             - name: STATE_EXPORT_KEY_SOURCE
               value: /etc/state-export-key/id_ed25519
             - name: STATE_EXPORT_KEY
