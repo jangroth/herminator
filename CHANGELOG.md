@@ -11,6 +11,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Entries
 - **Operational** — manual interventions, recoveries, one-off ops actions
 - **Decisions** — links to `DECISIONS.md` entries created on this day
 
+## 2026-10-28
+
+### Changed
+
+- `chart/`: the state export now carries every skill under `skills/` (dot-entries such as `.hub/`, `.archive/` and `.bundled_manifest` excluded) instead of only non-bundled or modified ones, and each commit message names the Hermes image tag (`HERMES_IMAGE_TAG`). New `chart/files/state-export/overview.py` maintains `README.md` in `herminator-state` with an Overview table of skill counts by origin, cron jobs, memory files and scripts, adding a row only when a value other than the date changes. **Breaking** for readers of `herminator-state`: the first export after rollout adds about 58 bundled skills. Chart bumped to 0.1.12. OpenSpec change [`hermes-state-overview`](openspec/changes/hermes-state-overview/), issue [#12](https://github.com/jangroth/herminator/issues/12).
+- `README.md`: exported state lists all skills.
+
 ## 2026-10-25
 
 ### Added

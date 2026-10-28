@@ -8,7 +8,7 @@ See proposal.md for motivation. The requirements are in `specs/state-export/spec
 - The live volume holds 84 skills (directories containing `SKILL.md`), 16 category-level `DESCRIPTION.md` files, and metadata in dot-entries: `.hub/`, `.archive/`, `.curator_*`, `.locks/`, `.bundled_manifest`. No skill is nested inside another.
 - `skills/.bundled_manifest` lists one `name:hash` per line, keyed by the skill's directory name. The hash algorithm is undocumented.
 - `cron/jobs.json` is `{"jobs": {...}, "updated_at": ...}`, and each job has an `enabled` field.
-- The sidecar's `PATH` is `/usr/local/bin:/usr/bin:/bin`. `/usr/bin/python3` (Debian's 3.13) is on it, and `jq` is not.
+- The sidecar's `PATH` is `/usr/local/bin:/usr/bin:/bin`. `python3` on it resolves to the image's `/usr/local/bin/python3` (3.14, under `/opt/hermes/tools`, not on the PVC), and `jq` is not.
 - Today's `herminator-state` has no README.
 
 ## Goals / Non-Goals
