@@ -13,10 +13,19 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Entries
 
 ## 2026-10-28
 
+### Added
+
+- `openspec/specs/state-overview/`: new capability spec, from archiving `hermes-state-overview`.
+
 ### Changed
 
-- `chart/`: the state export now carries every skill under `skills/` (dot-entries such as `.hub/`, `.archive/` and `.bundled_manifest` excluded) instead of only non-bundled or modified ones, and each commit message names the Hermes image tag (`HERMES_IMAGE_TAG`). New `chart/files/state-export/overview.py` maintains `README.md` in `herminator-state` with an Overview table of skill counts by origin, cron jobs, memory files and scripts, adding a row only when a value other than the date changes. **Breaking** for readers of `herminator-state`: the first export after rollout adds about 58 bundled skills. Chart bumped to 0.1.12. OpenSpec change [`hermes-state-overview`](openspec/changes/hermes-state-overview/), issue [#12](https://github.com/jangroth/herminator/issues/12).
+- `chart/`: the state export now carries every skill under `skills/` (dot-entries such as `.hub/`, `.archive/` and `.bundled_manifest` excluded) instead of only non-bundled or modified ones, and each commit message names the Hermes image tag (`HERMES_IMAGE_TAG`). New `chart/files/state-export/overview.py` maintains `README.md` in `herminator-state` with an Overview table of skill counts by origin, cron jobs, memory files and scripts, adding a row only when a value other than the date changes. **Breaking** for readers of `herminator-state`: the first export after rollout adds about 58 bundled skills. Chart bumped to 0.1.12. OpenSpec change [`hermes-state-overview`](openspec/changes/archive/2026-10-28-hermes-state-overview/), issue [#12](https://github.com/jangroth/herminator/issues/12).
 - `README.md`: exported state lists all skills.
+- `openspec/specs/state-export/`: all skills except dot-entries are exported, and commit messages name the Hermes version, from archiving `hermes-state-overview`.
+
+### Operational
+
+- Verified the hermes-state-overview rollout (chart 0.1.12, `b5f0b58`): ArgoCD Synced/Healthy and the new pod 4/4 ready with `HERMES_IMAGE_TAG=v0.22.2`. The first export (`herminator-state@f1b58a6`, `export 2026-10-28T03:50:03Z (hermes v0.22.2)`) adds 334 files: the README, the 58 previously unexported bundled skills and 16 category `DESCRIPTION.md`, with no dot-entries or locks and no scan findings. Its Overview row matches the live volume: 84 skills (58 bundled, 0 modified, 25 installed, 1 created), `2 (2 enabled)` cron jobs, 2 memory files, 14 scripts. A manual `export.sh` run in the sidecar three minutes later reported no changes and created no commit; the hourly loop itself was not observed.
 
 ## 2026-10-25
 
