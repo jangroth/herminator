@@ -26,12 +26,12 @@
 
 ## 3. Rollout
 
-- [ ] 3.1 After merge, verify ArgoCD is Synced/Healthy and `state-export` is ready.
-- [ ] 3.2 Verify the first commit after rollout in `herminator-state`:
+- [x] 3.1 After merge, verify ArgoCD is Synced/Healthy and `state-export` is ready.
+- [x] 3.2 Verify the first commit after rollout in `herminator-state`:
   - its message names the image tag
   - it adds the bundled skills and `DESCRIPTION.md` files and no dot-entries
   - the README's first row matches the counts taken from the live volume with `kubectl exec`
-- [ ] 3.3 Verify a later hourly run without state changes creates no commit (`gh api repos/jangroth/herminator-state/commits`).
+- [x] 3.3 Verify a later hourly run without state changes creates no commit (`gh api repos/jangroth/herminator-state/commits`).
 
 ## Workflow follow-up
 
