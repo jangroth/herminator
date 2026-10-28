@@ -26,7 +26,7 @@ but absent from the image, and **created** is none of these.
 """
 
 COLUMNS = ["Date (UTC)", "Hermes", "Skills", "Bundled", "Modified", "Installed",
-           "Created", "Cron jobs", "Enabled", "Memory files", "Scripts"]
+           "Created", "Cron jobs", "Memory files", "Scripts"]
 
 
 def row_line(cells):
@@ -136,11 +136,11 @@ def main():
     s = skills(src, bundled)
     jobs, enabled = cron(src)
     values = [tag, str(sum(s.values())), str(s["bundled"]), str(s["modified"]),
-              str(s["installed"]), str(s["created"]), str(jobs), str(enabled),
+              str(s["installed"]), str(s["created"]), f"{jobs} ({enabled} enabled)",
               str(count_files(src, "memories")), str(count_files(src, "scripts"))]
     rows = previous_rows(sys.stdin.buffer.read().decode("utf-8", "replace"))
     if not rows or rows[0][1:] != values:
-        rows.insert(0, [time] + values)
+        rows.insert(0, [time.replace("T", " ")[:16]] + values)
     sys.stdout.write(INTRO + "\n" + "\n".join([HEADER, RULE] + [row_line(r) for r in rows]) + "\n")
 
 
