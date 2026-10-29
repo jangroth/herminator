@@ -1,0 +1,54 @@
+rule_files: [state-export-rules.yaml]
+evaluation_interval: 1m
+tests:
+  # last success at t=0, then runs keep failing with a scan finding
+  - interval: 1m
+    input_series:
+      - series: 'hermes_state_export_last_success_timestamp_seconds{namespace="hermes",pod="p"}'
+        values: '0x1200'
+      - series: 'hermes_state_export_last_run_exit_code{namespace="hermes",pod="p"}'
+        values: '3x1200'
+    alert_rule_test:
+      - {eval_time: 11h, alertname: HermesStateExportStale, exp_alerts: []}
+      - eval_time: 13h
+        alertname: HermesStateExportStale
+        exp_alerts:
+          - exp_labels: {severity: warning, namespace: hermes, pod: p}
+            exp_annotations:
+              summary: No Hermes state export has succeeded for 12h.
+              description: Last success 13h 0m 0s ago. The last run failed with a secret-scan finding; see the state-export container logs.
+  # healthy, nothing to push: success timestamp keeps advancing
+  - interval: 1m
+    input_series:
+      - series: 'hermes_state_export_last_success_timestamp_seconds{namespace="hermes",pod="p"}'
+        values: '0+60x1800'
+    alert_rule_test:
+      - {eval_time: 24h, alertname: HermesStateExportStale, exp_alerts: []}
+  # recovery: stale, then a success at 14h
+  - interval: 1m
+    input_series:
+      - series: 'hermes_state_export_last_success_timestamp_seconds{namespace="hermes",pod="p"}'
+        values: '0x840 50400x300'
+      - series: 'hermes_state_export_last_run_exit_code{namespace="hermes",pod="p"}'
+        values: '1x1200'
+    alert_rule_test:
+      - eval_time: 13h
+        alertname: HermesStateExportStale
+        exp_alerts:
+          - exp_labels: {severity: warning, namespace: hermes, pod: p}
+            exp_annotations:
+              summary: No Hermes state export has succeeded for 12h.
+              description: Last success 13h 0m 0s ago. The last run failed with exit code 1; see the state-export container logs.
+      - {eval_time: 15h, alertname: HermesStateExportStale, exp_alerts: []}
+  # metrics absent
+  - interval: 1m
+    input_series: []
+    alert_rule_test:
+      - {eval_time: 11h, alertname: HermesStateExportMissing, exp_alerts: []}
+      - eval_time: 13h
+        alertname: HermesStateExportMissing
+        exp_alerts:
+          - exp_labels: {severity: warning, namespace: hermes}
+            exp_annotations:
+              summary: No Hermes state export has succeeded for 12h.
+              description: No successful export reported in 12h. The state-export sidecar or its metrics endpoint may be down, or no run has succeeded since the pod started.
