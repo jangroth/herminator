@@ -11,6 +11,20 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Entries
 - **Operational** — manual interventions, recoveries, one-off ops actions
 - **Decisions** — links to `DECISIONS.md` entries created on this day
 
+## 2026-10-29
+
+### Added
+
+- `chart/`: alerting for a stale state export. The `state-export` sidecar serves `hermes_state_export_last_success_timestamp_seconds`, `…_last_run_timestamp_seconds` and `…_last_run_exit_code` on container port 9464 (new `chart/files/state-export/metrics.py`; not on any Service). New `templates/state-export-monitoring.yaml` adds a `PodMonitor` and a `PrometheusRule`: `HermesStateExportStale` fires when no run has succeeded for 12h, `HermesStateExportMissing` when the metrics have been absent for 12h, both `severity: warning` to the existing Alertmanager → Telegram route. Gated by `stateExport.alerting.enabled`; threshold `stateExport.alerting.staleAfterHours`. Chart bumped to 0.1.13. OpenSpec change [`alert-on-state-export-failure`](openspec/changes/alert-on-state-export-failure/), issue [#13](https://github.com/jangroth/herminator/issues/13).
+
+### Changed
+
+- `chart/`: `export.sh` exits 3 on a secret-scan finding, 4 on a scanner error and 1 on any other failure.
+
+### Fixed
+
+- `chart/`: the sidecar's `export failed` log line reported `exit 0` instead of the run's exit code.
+
 ## 2026-10-28
 
 ### Added

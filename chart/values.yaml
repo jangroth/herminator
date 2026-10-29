@@ -78,6 +78,12 @@ stateExport:
   betterleaks:
     image: ghcr.io/betterleaks/betterleaks
     tag: ""
+  # Container port only; not on any Service.
+  metricsPort: 9464
+  # PodMonitor + PrometheusRule; needs the prometheus-operator CRDs.
+  alerting:
+    enabled: true
+    staleAfterHours: 12
 
 persistence:
   size: 5Gi

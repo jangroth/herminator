@@ -12,6 +12,8 @@ data:
 {{ .Files.Get "files/state-export/export.sh" | indent 4 }}
   overview.py: |
 {{ .Files.Get "files/state-export/overview.py" | indent 4 }}
+  metrics.py: |
+{{ .Files.Get "files/state-export/metrics.py" | indent 4 }}
   # GitHub's published SSH host keys (api.github.com/meta).
   known_hosts: |
 {{ .Files.Get "files/state-export/known_hosts" | indent 4 }}
