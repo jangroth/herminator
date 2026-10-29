@@ -259,6 +259,11 @@ spec:
               value: /work/ssh/id_ed25519
             - name: GIT_SSH_COMMAND
               value: "ssh -F /dev/null -i /work/ssh/id_ed25519 -o IdentitiesOnly=yes -o UserKnownHostsFile=/etc/state-export/known_hosts -o StrictHostKeyChecking=yes"
+            - name: STATE_EXPORT_METRICS_PORT
+              value: {{ .Values.stateExport.metricsPort | quote }}
+          ports:
+            - name: metrics
+              containerPort: {{ .Values.stateExport.metricsPort }}
           volumeMounts:
             - name: data
               mountPath: /opt/data

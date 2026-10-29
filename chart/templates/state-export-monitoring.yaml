@@ -1,0 +1,49 @@
+{{- if .Values.stateExport.alerting.enabled }}
+{{- $stale := mul 3600 .Values.stateExport.alerting.staleAfterHours }}
+{{- $metric := printf "hermes_state_export_last_success_timestamp_seconds{namespace=%q}" .Values.namespace }}
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: hermes-state-export
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: hermes
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: hermes
+  podMetricsEndpoints:
+    - port: metrics
+      interval: 60s
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: hermes-state-export
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: hermes
+    release: prometheus
+spec:
+  groups:
+    - name: hermes-state-export
+      rules:
+        - alert: HermesStateExportStale
+          expr: time() - {{ $metric }} > {{ $stale }}
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: No Hermes state export has succeeded for {{ .Values.stateExport.alerting.staleAfterHours }}h.
+            description: |-
+              {{`Last success {{ humanizeDuration $value }} ago. The last run failed with {{ with printf "hermes_state_export_last_run_exit_code{pod=%q}" $labels.pod | query }}{{ with . | first | value }}{{ if eq . 3.0 }}a secret-scan finding{{ else if eq . 4.0 }}a secret-scanner error{{ else }}exit code {{ . }}{{ end }}{{ end }}{{ else }}an unknown result{{ end }}; see the state-export container logs.`}}
+        - alert: HermesStateExportMissing
+          expr: absent({{ $metric }})
+          for: {{ .Values.stateExport.alerting.staleAfterHours }}h
+          labels:
+            severity: warning
+          annotations:
+            summary: No Hermes state export has succeeded for {{ .Values.stateExport.alerting.staleAfterHours }}h.
+            description: No successful export reported in {{ .Values.stateExport.alerting.staleAfterHours }}h. The state-export sidecar or its metrics endpoint may be down, or no run has succeeded since the pod started.
+{{- end }}

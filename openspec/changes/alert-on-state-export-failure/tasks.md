@@ -2,15 +2,15 @@
 
 ## 1. Run outcome and metrics
 
-- [ ] 1.1 Make `export.sh` exit 3 on scan findings and 4 on scanner errors, and fix `run.sh` to capture `rc=$?` before logging. Verify in the Hermes image with the fixture harness that the loop logs `exit 3` for a planted secret, `exit 4` for a missing scanner and `exit 1` for an unreachable remote.
-- [ ] 1.2 After each run, have `run.sh` write the three gauges to a temp file on `/work` and rename it into place, with the success timestamp only after a success. Verify the file contents with the fixture after a success, a failure, and a success that follows a failure.
-- [ ] 1.3 Write `chart/files/state-export/metrics.py` serving the file at `/metrics` on port 9464, with an empty body before the first run. Start it from `run.sh`. Verify with `curl` inside the image (as uid 1000, `--network none`) that the output parses as Prometheus text format.
+- [x] 1.1 Make `export.sh` exit 3 on scan findings and 4 on scanner errors, and fix `run.sh` to capture `rc=$?` before logging. Verify in the Hermes image with the fixture harness that the loop logs `exit 3` for a planted secret, `exit 4` for a missing scanner and `exit 1` for an unreachable remote.
+- [x] 1.2 After each run, have `run.sh` write the three gauges to a temp file on `/work` and rename it into place, with the success timestamp only after a success. Verify the file contents with the fixture after a success, a failure, and a success that follows a failure.
+- [x] 1.3 Write `chart/files/state-export/metrics.py` serving the file at `/metrics` on port 9464, with an empty body before the first run. Start it from `run.sh`. Verify with `curl` inside the image (as uid 1000, `--network none`) that the output parses as Prometheus text format.
 
 ## 2. Chart
 
-- [ ] 2.1 Add the `metrics` container port to `state-export`, add `metrics.py` to the `hermes-state-export` ConfigMap, and add `stateExport.alerting` values (`enabled: true`, `staleAfter: 12h`). Verify with `helm template` that the `hermes` Service still exposes only its existing ports.
-- [ ] 2.2 Add `state-export-monitoring.yaml` with the `PodMonitor` and the `PrometheusRule` (two rules: stale and absent; `severity: warning`; `release: prometheus` labels; description translating exit codes 3 and 4). Verify that `helm template` renders both with `enabled: true` and neither with `false`, and that `helm lint` passes.
-- [ ] 2.3 Bump the chart version and add a `CHANGELOG.md` entry linking this change and issue #13. Verify `openspec validate alert-on-state-export-failure --strict` passes.
+- [x] 2.1 Add the `metrics` container port to `state-export`, add `metrics.py` to the `hermes-state-export` ConfigMap, and add `stateExport.alerting` values (`enabled: true`, `staleAfterHours: 12`). Verify with `helm template` that the `hermes` Service still exposes only its existing ports.
+- [x] 2.2 Add `state-export-monitoring.yaml` with the `PodMonitor` and the `PrometheusRule` (two rules: `HermesStateExportStale` and `HermesStateExportMissing` on `absent`; `severity: warning`; `release: prometheus` labels; description translating exit codes 3 and 4). Verify that `helm template` renders both with `enabled: true` and neither with `false`, and that `helm lint` passes.
+- [x] 2.3 Bump the chart version and add a `CHANGELOG.md` entry linking this change and issue #13. Verify `openspec validate alert-on-state-export-failure --strict` passes.
 
 ## 3. Rollout
 

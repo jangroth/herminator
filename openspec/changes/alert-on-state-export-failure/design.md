@@ -8,7 +8,7 @@ See proposal.md for motivation, and `specs/state-export/spec.md` for the require
 - `export.sh` exits 1 for every failure, and logs scan findings and scanner errors separately.
 - Prometheus (`kube-prometheus-stack` 90.2.0) uses `podMonitorSelector` and `ruleSelector` `{release: prometheus}`, with empty namespace selectors, so it selects from all namespaces. The `hermes` namespace has no network policies.
 - The Alertmanager route sends everything except `severity: info` to Telegram, with `repeat_interval: 12h`.
-- The sidecar runs as uid 1000 with a fixed `PATH`. `/usr/bin/python3` (3.13) is available.
+- The sidecar runs as uid 1000 with a fixed `PATH`. `python3` (3.14 in v0.22.2) is available.
 
 ## Goals / Non-Goals
 
@@ -23,7 +23,7 @@ See proposal.md for motivation, and `specs/state-export/spec.md` for the require
 
 ## Decisions
 
-**Staleness, not failure counting.** The alert expression is `time() - hermes_state_export_last_success_timestamp_seconds > 43200`, or-ed with `absent(hermes_state_export_last_success_timestamp_seconds)`. It has `for: 15m` on the first part and `for: 12h` on the `absent` part, written as two rules in one group. Staleness covers causes nobody listed in advance. *Alternative:* alert on consecutive failures. Rejected because it misses a sidecar that has stopped running altogether.
+**Staleness, not failure counting.** The alert expression is `time() - hermes_state_export_last_success_timestamp_seconds > 43200`, or-ed with `absent(hermes_state_export_last_success_timestamp_seconds)`. They are two rules in one group: `HermesStateExportStale` (`for: 15m`) and `HermesStateExportMissing` on the `absent` part (`for: 12h`). Distinct names, because promtool rejects two alerting rules with the same name and labels. Staleness covers causes nobody listed in advance. *Alternative:* alert on consecutive failures. Rejected because it misses a sidecar that has stopped running altogether.
 
 **Metrics.** These are gauges in Prometheus text format:
 - `hermes_state_export_last_success_timestamp_seconds`: written only after a success, so it is absent until the first one. That makes the never-succeeded case fall into the `absent` rule.
@@ -38,7 +38,7 @@ See proposal.md for motivation, and `specs/state-export/spec.md` for the require
 
 **Exposure.** The port is declared on the container only, not on the `hermes` Service, so it is reachable only inside the cluster network and never through the LoadBalancer VIP. The metrics contain only timestamps and an exit code.
 
-**Chart resources.** A new template `state-export-monitoring.yaml` holds the `PodMonitor` (selecting `app.kubernetes.io/name: hermes`, port `metrics`, interval 60s) and the `PrometheusRule` (group `hermes-state-export`, `severity: warning`). Both are labelled `release: prometheus`. They are gated by `stateExport.alerting.enabled`, default `true`, so the chart still renders where the CRDs don't exist. The threshold is `stateExport.alerting.staleAfter: 12h`.
+**Chart resources.** A new template `state-export-monitoring.yaml` holds the `PodMonitor` (selecting `app.kubernetes.io/name: hermes`, port `metrics`, interval 60s) and the `PrometheusRule` (group `hermes-state-export`, `severity: warning`). Both are labelled `release: prometheus`. They are gated by `stateExport.alerting.enabled`, default `true`, so the chart still renders where the CRDs don't exist. The threshold is `stateExport.alerting.staleAfterHours: 12`, in hours because the stale expression needs seconds and the `absent` rule a duration, and Helm can't parse a duration string. The port is `stateExport.metricsPort: 9464`.
 
 **Exit-code log fix.** `run.sh` captures `rc=$?` straight after `export.sh` returns, and uses `$rc` both in the log line and in the metrics.
 

@@ -1,6 +1,8 @@
 #!/bin/bash
 # One export run: mirror allowlisted state into the work tree, scan, commit, push.
+# Exit codes: 3 scan finding, 4 scanner error, 1 anything else.
 set -euo pipefail
+trap 'exit 1' ERR
 
 SRC=${STATE_EXPORT_SOURCE:-/opt/data}
 BUNDLED=${STATE_EXPORT_BUNDLED_SKILLS:-/opt/hermes/skills}
@@ -88,8 +90,8 @@ if ! git -C "$WORK" diff --cached --quiet; then
     --ignore-gitleaks-allow --exit-code 3 -v .) || rc=$?
   case $rc in
     0) ;;
-    3) log "secret scan reported findings; not committing"; exit 1 ;;
-    *) log "secret scan failed (exit $rc); not committing"; exit 1 ;;
+    3) log "secret scan reported findings; not committing"; exit 3 ;;
+    *) log "secret scan failed (exit $rc); not committing"; exit 4 ;;
   esac
   git -C "$WORK" -c user.name=hermes-state-export \
     -c user.email=hermes-state-export@users.noreply.github.com \
