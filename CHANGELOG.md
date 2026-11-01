@@ -11,11 +11,26 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Entries
 - **Operational** — manual interventions, recoveries, one-off ops actions
 - **Decisions** — links to `DECISIONS.md` entries created on this day
 
+## 2026-11-01
+
+### Added
+
+- `chart/tests/`: promtool unit tests for the state-export alert rules. `state-export-rules.sh` renders the `PrometheusRule` and runs `promtool check rules` and `promtool test rules` covering a scan block, a healthy export with no changes, recovery and missing metrics. Part of [`alert-on-state-export-failure`](openspec/changes/archive/2026-11-01-alert-on-state-export-failure/).
+
+### Changed
+
+- `README.md`: mentions the stale-export alert.
+- `openspec/specs/state-export/`: a stale export raises an alert, and failure logs carry the real exit code, from archiving `alert-on-state-export-failure`.
+
+### Operational
+
+- Verified the alert-on-state-export-failure rollout (chart 0.1.13, `9844e0d`): ArgoCD Synced/Healthy and the new pod 4/4. Prometheus 3.14.0 scrapes `podMonitor/hermes/hermes-state-export/0` (up), and `HermesStateExportStale` and `HermesStateExportMissing` are loaded and inactive. With a 60s threshold the stale expression returned the series and with 12h it returned nothing. `absent` was empty for `hermes` and returned a series for a namespace with no metrics. `HermesStateExportMissing` was pending for about 30s on 2026-10-29 at 07:19Z, between the rule loading and the first scrape, without firing. End to end: a hand-applied test rule `HermesStateExportStaleTest` (2-minute threshold, no `for`) fired at 2026-11-01 05:04Z, Alertmanager sent it to the `telegram` receiver with no failures and the message arrived. After the rule was deleted, the alert resolved at 05:10Z.
+
 ## 2026-10-29
 
 ### Added
 
-- `chart/`: alerting for a stale state export. The `state-export` sidecar serves `hermes_state_export_last_success_timestamp_seconds`, `…_last_run_timestamp_seconds` and `…_last_run_exit_code` on container port 9464 (new `chart/files/state-export/metrics.py`; not on any Service). New `templates/state-export-monitoring.yaml` adds a `PodMonitor` and a `PrometheusRule`: `HermesStateExportStale` fires when no run has succeeded for 12h, `HermesStateExportMissing` when the metrics have been absent for 12h, both `severity: warning` to the existing Alertmanager → Telegram route. Gated by `stateExport.alerting.enabled`; threshold `stateExport.alerting.staleAfterHours`. Chart bumped to 0.1.13. OpenSpec change [`alert-on-state-export-failure`](openspec/changes/alert-on-state-export-failure/), issue [#13](https://github.com/jangroth/herminator/issues/13).
+- `chart/`: alerting for a stale state export. The `state-export` sidecar serves `hermes_state_export_last_success_timestamp_seconds`, `…_last_run_timestamp_seconds` and `…_last_run_exit_code` on container port 9464 (new `chart/files/state-export/metrics.py`; not on any Service). New `templates/state-export-monitoring.yaml` adds a `PodMonitor` and a `PrometheusRule`: `HermesStateExportStale` fires when no run has succeeded for 12h, `HermesStateExportMissing` when the metrics have been absent for 12h, both `severity: warning` to the existing Alertmanager → Telegram route. Gated by `stateExport.alerting.enabled`; threshold `stateExport.alerting.staleAfterHours`. Chart bumped to 0.1.13. OpenSpec change [`alert-on-state-export-failure`](openspec/changes/archive/2026-11-01-alert-on-state-export-failure/), issue [#13](https://github.com/jangroth/herminator/issues/13).
 
 ### Changed
 
