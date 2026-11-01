@@ -15,9 +15,9 @@
 
 ## 3. Rollout
 
-- [ ] 3.1 After merge, verify ArgoCD is Synced/Healthy, the pod is ready, and Prometheus lists the `state-export` target as up (Prometheus API through `kubectl port-forward`).
-- [ ] 3.2 Verify the `hermes-state-export` rule group is loaded and inactive. Run each alert expression through the Prometheus API with a 60-second threshold in place of 12 hours, and confirm it returns a series only when the threshold is exceeded.
-- [ ] 3.3 Verify end to end with a test copy of the stale rule, applied by hand in the `hermes` namespace with its own alert name, a 2-minute threshold and no `for`. The last success is normally up to an hour old, so it fires without breaking anything. Confirm the alert reaches Telegram, then delete the test rule and confirm the alert resolves.
+- [x] 3.1 After merge, verify ArgoCD is Synced/Healthy, the pod is ready, and Prometheus lists the `state-export` target as up (Prometheus API through `kubectl port-forward`).
+- [x] 3.2 Verify the `hermes-state-export` rule group is loaded and inactive. Run each alert expression through the Prometheus API with a 60-second threshold in place of 12 hours, and confirm it returns a series only when the threshold is exceeded.
+- [x] 3.3 Verify end to end with a test copy of the stale rule, applied by hand in the `hermes` namespace with its own alert name, a 2-minute threshold and no `for`. The last success is normally up to an hour old, so it fires without breaking anything. Confirm the alert reaches Telegram, then delete the test rule and confirm the alert resolves.
 
 ## Workflow follow-up
 

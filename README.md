@@ -4,7 +4,7 @@ Packaging and deploying [Hermes Agent](https://hermes-agent.nousresearch.com/) (
 
 ## Status
 
-Deployed to homekube via ArgoCD. Image versions are pinned in `homekube-apps` and bumped by Renovate ([DECISIONS.md #012](DECISIONS.md)). Hermes' readable runtime state (config, memories, cron jobs, scripts, skills) is exported hourly to the private repo [`jangroth/herminator-state`](https://github.com/jangroth/herminator-state).
+Deployed to homekube via ArgoCD. Image versions are pinned in `homekube-apps` and bumped by Renovate ([DECISIONS.md #012](DECISIONS.md)). Hermes' readable runtime state (config, memories, cron jobs, scripts, skills) is exported hourly to the private repo [`jangroth/herminator-state`](https://github.com/jangroth/herminator-state), and an alert goes to Telegram if no export has succeeded for 12 hours.
 
 ## Layout
 
