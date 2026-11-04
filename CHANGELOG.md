@@ -11,6 +11,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Entries
 - **Operational** — manual interventions, recoveries, one-off ops actions
 - **Decisions** — links to `DECISIONS.md` entries created on this day
 
+## 2026-11-04
+
+### Changed
+
+- `chart/templates/pvc.yaml`: `hermes-data` now opts in to Longhorn backups through the shared `daily` group (`recurring-job-group.longhorn.io/daily`) instead of the per-app `hermes-daily-backup` job. The schedule (`0 16 * * *`) and retention (7) stay the same. Removing `hermes-daily-backup` from homekube-apps comes after this syncs ([jangroth/homekube#69](https://github.com/jangroth/homekube/issues/69)).
+
 ## 2026-11-01
 
 ### Added
