@@ -9,7 +9,7 @@ metadata:
   labels:
     app.kubernetes.io/name: hermes
     recurring-job.longhorn.io/source: enabled
-    recurring-job.longhorn.io/hermes-daily-backup: enabled
+    recurring-job-group.longhorn.io/daily: enabled
 spec:
   accessModes:
     - ReadWriteOnce
