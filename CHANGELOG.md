@@ -15,6 +15,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Entries
 
 ### Changed
 
+- `chart/`: `api.telegram.org` is no longer in the default `agentVault.noProxy`, so Telegram goes through the Agent Vault proxy, which substitutes the bot token into the path (homekube spec 010 step 9). Chart bumped to 0.1.16. Part of [`agent-vault-proxy`](openspec/changes/agent-vault-proxy/) (task 1.7), issue [#20](https://github.com/jangroth/herminator/issues/20).
 - `chart/`: with `agentVault` on, the `hermes` container also gets `NODE_USE_ENV_PROXY=1`, so Node's built-in `fetch` uses `HTTPS_PROXY` and `NO_PROXY`; without it Node went direct. Chart bumped to 0.1.15. Part of [`agent-vault-proxy`](openspec/changes/agent-vault-proxy/) (task 1.6), issue [#20](https://github.com/jangroth/herminator/issues/20).
 
 ## 2026-11-07

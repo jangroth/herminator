@@ -27,7 +27,7 @@ See proposal.md for motivation and `specs/credential-brokering/spec.md` for the 
 
 **`HTTPS_PROXY` via `secretKeyRef`, plus `NODE_USE_ENV_PROXY=1`, on the `hermes` container only.** The other containers run no agent code; state-export uses git over SSH.
 
-**`noProxy` defaults in the chart.** `.svc`, `.cluster.local`, `.ts.net`, `10.0.0.0/8`, `100.64.0.0/10`, `192.168.86.0/24`, `localhost`, `127.0.0.1`, `api.telegram.org`, joined into `NO_PROXY`. Like `podCidr` and `vip`, they describe homekube; homekube-apps can override. `api.telegram.org` stays until Telegram is brokered (spec 010 step 9). httpx and urllib ignore the CIDR entries; the hostname suffixes cover Dex and Aperture.
+**`noProxy` defaults in the chart.** `.svc`, `.cluster.local`, `.ts.net`, `10.0.0.0/8`, `100.64.0.0/10`, `192.168.86.0/24`, `localhost`, `127.0.0.1`, joined into `NO_PROXY`. Like `podCidr` and `vip`, they describe homekube; homekube-apps can override. `api.telegram.org` was on the list until the bot token was brokered by path substitution (spec 010 step 9); with it gone, Hermes's Telegram adapter uses the proxy and skips its fallback-IP transport. httpx and urllib ignore the CIDR entries; the hostname suffixes cover Dex and Aperture.
 
 **CA trust.** `caCert` becomes key `agent-vault-ca.crt` in `hermes-config`, mounted next to `homekube-ca.crt`. When set, `build-ca-bundle` appends it to `ca-bundle.crt` and also writes `node-extra.crt` (homekube-ca + proxy CA), which `NODE_EXTRA_CA_CERTS` then points at. `CURL_CA_BUNDLE` points at `ca-bundle.crt` whenever the block is on. With `caCert` unset, the init container's command is unchanged.
 
