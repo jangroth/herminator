@@ -7,7 +7,7 @@ See proposal.md for motivation and `specs/credential-brokering/spec.md` for the 
 - `build-ca-bundle` writes `/ca-bundle/ca-bundle.crt` (system store + homekube-ca); `SSL_CERT_FILE` and `REQUESTS_CA_BUNDLE` point at it. `NODE_EXTRA_CA_CERTS` points at `homekube-ca.crt` alone.
 - Real credentials already ship as SealedSecret ciphertext passed in as values (`sealedSecret.*` → `hermes-secrets`).
 - The proxy URL is `http://x-agent-vault:<session-token>@agent-vault-proxy.agent-vault.svc:17323`; the session token is the password.
-- httpx (Tavily plugin) and urllib honour `HTTPS_PROXY`/`NO_PROXY`. The Telegram gateway does too, through `gateway.trust_env` (default on). curl honours `HTTPS_PROXY` but takes its CAs from `CURL_CA_BUNDLE`, not `SSL_CERT_FILE`.
+- httpx (Tavily plugin) and urllib honour `HTTPS_PROXY`/`NO_PROXY`. The Telegram gateway does too, through `gateway.trust_env` (default on). curl honours `HTTPS_PROXY` but takes its CAs from `CURL_CA_BUNDLE`, not `SSL_CERT_FILE`. Node's built-in `fetch` honours `HTTPS_PROXY` and `NO_PROXY` only with `NODE_USE_ENV_PROXY=1`.
 
 ## Goals / Non-Goals
 
@@ -25,7 +25,7 @@ See proposal.md for motivation and `specs/credential-brokering/spec.md` for the 
 
 **Ciphertext as a value, rendered by the chart.** `agentVault.encryptedHttpsProxy` is the `encryptedData.HTTPS_PROXY` of a SealedSecret named `hermes-agent-vault` in namespace `hermes` (strict scope), and the chart renders that SealedSecret, like `hermes-secrets`. *Alternative:* the SealedSecret as a second ArgoCD source in homekube-apps. Rejected: adds a multi-source Application for one file. *Alternative:* a key in `hermes-secrets`. Rejected: its ciphertext lives in this repo's values, so a session rotation would need a herminator PR.
 
-**`HTTPS_PROXY` via `secretKeyRef`, on the `hermes` container only.** The other containers run no agent code; state-export uses git over SSH.
+**`HTTPS_PROXY` via `secretKeyRef`, plus `NODE_USE_ENV_PROXY=1`, on the `hermes` container only.** The other containers run no agent code; state-export uses git over SSH.
 
 **`noProxy` defaults in the chart.** `.svc`, `.cluster.local`, `.ts.net`, `10.0.0.0/8`, `100.64.0.0/10`, `192.168.86.0/24`, `localhost`, `127.0.0.1`, `api.telegram.org`, joined into `NO_PROXY`. Like `podCidr` and `vip`, they describe homekube; homekube-apps can override. `api.telegram.org` stays until Telegram is brokered (spec 010 step 9). httpx and urllib ignore the CIDR entries; the hostname suffixes cover Dex and Aperture.
 

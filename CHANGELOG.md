@@ -11,6 +11,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Entries
 - **Operational** — manual interventions, recoveries, one-off ops actions
 - **Decisions** — links to `DECISIONS.md` entries created on this day
 
+## 2026-11-08
+
+### Changed
+
+- `chart/`: with `agentVault` on, the `hermes` container also gets `NODE_USE_ENV_PROXY=1`, so Node's built-in `fetch` uses `HTTPS_PROXY` and `NO_PROXY`; without it Node went direct. Chart bumped to 0.1.15. Part of [`agent-vault-proxy`](openspec/changes/agent-vault-proxy/) (task 1.6), issue [#20](https://github.com/jangroth/herminator/issues/20).
+
 ## 2026-11-07
 
 ### Added

@@ -7,6 +7,7 @@
 - [x] 1.3 Add `agent-vault-ca.crt` to `hermes-config` when `caCert` is set; have `build-ca-bundle` append it to `ca-bundle.crt` and write `node-extra.crt`, and point `NODE_EXTRA_CA_CERTS` at it. Verify by running the rendered init command in the Hermes image against a test CA, and that the command is unchanged without `caCert`.
 - [x] 1.4 Add `chart/tests/agent-vault-render.sh`: compares a render without `agentVault` with one from `origin/main`, and checks a render with the block set (SealedSecret name and namespace, env only on `hermes`, annotation changes when either value changes). Verify it passes, and fails when an env var is moved to another container.
 - [x] 1.5 Bump the chart version, add a `CHANGELOG.md` entry linking this change and issue #20, and describe the block in `README.md`. Verify `helm lint` and `openspec validate agent-vault-proxy --strict` pass.
+- [ ] 1.6 Add `NODE_USE_ENV_PROXY=1` to the `hermes` container when the block is on, since Node's built-in `fetch` ignores `HTTPS_PROXY` without it, and to the render test's hermes-only check. Bump the chart version. Verify the render test passes and, in the pod, `node -e 'fetch(...)'` gets a certificate issued by the proxy CA.
 
 ## 2. Rollout
 
