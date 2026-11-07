@@ -18,6 +18,10 @@ spec:
     metadata:
       labels:
         app.kubernetes.io/name: hermes
+      {{- if .Values.agentVault.encryptedHttpsProxy }}
+      annotations:
+        checksum/agent-vault: {{ print .Values.agentVault.encryptedHttpsProxy (required "agentVault.caCert must be set with agentVault.encryptedHttpsProxy" .Values.agentVault.caCert) | sha256sum }}
+      {{- end }}
     spec:
       serviceAccountName: hermes
       # Aperture's MagicDNS name doesn't resolve in-pod — the tailscale sidecar
@@ -37,7 +41,13 @@ spec:
           command:
             - sh
             - -c
+            {{- if .Values.agentVault.caCert }}
+            - >-
+              cat /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/homekube/homekube-ca.crt /etc/ssl/certs/homekube/agent-vault-ca.crt > /ca-bundle/ca-bundle.crt &&
+              cat /etc/ssl/certs/homekube/homekube-ca.crt /etc/ssl/certs/homekube/agent-vault-ca.crt > /ca-bundle/node-extra.crt
+            {{- else }}
             - cat /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/homekube/homekube-ca.crt > /ca-bundle/ca-bundle.crt
+            {{- end }}
           volumeMounts:
             - name: ca-cert
               mountPath: /etc/ssl/certs/homekube
@@ -123,14 +133,26 @@ spec:
             # Python-side default (dropping the system CA store), which broke
             # every non-Dex Python-backed egress (e.g. Telegram, issue #2).
             # Those two point at a combined bundle instead; NODE_EXTRA_CA_CERTS
-            # can stay pointed at homekube-ca alone since it only adds to what's
-            # already trusted. See DECISIONS.md #010.
+            # gets only homekube-ca (plus the Agent Vault CA) since it only adds
+            # to what's already trusted. See DECISIONS.md #010.
             - name: NODE_EXTRA_CA_CERTS
-              value: /etc/ssl/certs/homekube/homekube-ca.crt
+              value: {{ if .Values.agentVault.caCert }}/etc/ssl/certs/homekube-bundle/node-extra.crt{{ else }}/etc/ssl/certs/homekube/homekube-ca.crt{{ end }}
             - name: SSL_CERT_FILE
               value: /etc/ssl/certs/homekube-bundle/ca-bundle.crt
             - name: REQUESTS_CA_BUNDLE
               value: /etc/ssl/certs/homekube-bundle/ca-bundle.crt
+            {{- if .Values.agentVault.encryptedHttpsProxy }}
+            # hermes container only: the other containers run no agent code.
+            - name: HTTPS_PROXY
+              valueFrom:
+                secretKeyRef:
+                  name: hermes-agent-vault
+                  key: HTTPS_PROXY
+            - name: NO_PROXY
+              value: {{ join "," .Values.agentVault.noProxy | quote }}
+            - name: CURL_CA_BUNDLE
+              value: /etc/ssl/certs/homekube-bundle/ca-bundle.crt
+            {{- end }}
           ports:
             - name: gateway
               containerPort: 8642
@@ -301,6 +323,10 @@ spec:
             items:
               - key: homekube-ca.crt
                 path: homekube-ca.crt
+              {{- if .Values.agentVault.caCert }}
+              - key: agent-vault-ca.crt
+                path: agent-vault-ca.crt
+              {{- end }}
         - name: ca-bundle
           emptyDir: {}
         - name: tls
