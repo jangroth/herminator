@@ -11,6 +11,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Entries
 - **Operational** — manual interventions, recoveries, one-off ops actions
 - **Decisions** — links to `DECISIONS.md` entries created on this day
 
+## 2026-11-07
+
+### Added
+
+- `chart/`: optional `agentVault` block for routing Hermes's HTTPS through homekube's Infisical Agent Vault proxy ([homekube spec 010](https://github.com/jangroth/homekube/blob/main/docs/specs/010-agent-vault-hermes.md)). With `agentVault.encryptedHttpsProxy` set, new `templates/agent-vault-sealedsecret.yaml` renders SealedSecret `hermes-agent-vault`, and only the `hermes` container gets `HTTPS_PROXY` from it, `NO_PROXY` (from `agentVault.noProxy`) and `CURL_CA_BUNDLE`. `agentVault.caCert` (required with it) becomes `agent-vault-ca.crt` in `hermes-config`; `build-ca-bundle` adds it to `ca-bundle.crt` and writes `node-extra.crt` for `NODE_EXTRA_CA_CERTS`. A `checksum/agent-vault` pod annotation restarts Hermes when either value changes. With the block unset, the rendered objects are unchanged. New `chart/tests/agent-vault-render.sh` checks both. Chart bumped to 0.1.14. OpenSpec change [`agent-vault-proxy`](openspec/changes/agent-vault-proxy/), issue [#20](https://github.com/jangroth/herminator/issues/20).
+
 ## 2026-11-04
 
 ### Changed

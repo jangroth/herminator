@@ -4,7 +4,7 @@ Packaging and deploying [Hermes Agent](https://hermes-agent.nousresearch.com/) (
 
 ## Status
 
-Deployed to homekube via ArgoCD. Image versions are pinned in `homekube-apps` and bumped by Renovate ([DECISIONS.md #012](DECISIONS.md)). Hermes' readable runtime state (config, memories, cron jobs, scripts, skills) is exported hourly to the private repo [`jangroth/herminator-state`](https://github.com/jangroth/herminator-state), and an alert goes to Telegram if no export has succeeded for 12 hours.
+Deployed to homekube via ArgoCD. Image versions are pinned in `homekube-apps` and bumped by Renovate ([DECISIONS.md #012](DECISIONS.md)). Hermes' readable runtime state (config, memories, cron jobs, scripts, skills) is exported hourly to the private repo [`jangroth/herminator-state`](https://github.com/jangroth/herminator-state), and an alert goes to Telegram if no export has succeeded for 12 hours. With the chart's `agentVault` values set, Hermes's outbound HTTPS goes through homekube's Infisical Agent Vault proxy, which attaches the real API credentials, so the pod holds only a revocable session token ([homekube spec 010](https://github.com/jangroth/homekube/blob/main/docs/specs/010-agent-vault-hermes.md)).
 
 ## Layout
 

@@ -11,7 +11,7 @@ The chart SHALL render exactly as without this capability when no proxy URL ciph
 
 #### Scenario: Block unset
 - **WHEN** the chart is rendered without `agentVault.encryptedHttpsProxy`
-- **THEN** the rendered manifests are identical to those of the previous chart version
+- **THEN** the rendered objects are identical to those of the previous chart version
 
 ### Requirement: Hermes's HTTPS goes through the proxy
 When a proxy URL ciphertext is set, the `hermes` container SHALL send HTTPS requests through the proxy it names, except to destinations in the bypass list. The proxy URL SHALL reach the pod only as a sealed secret.

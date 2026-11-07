@@ -33,6 +33,10 @@ data:
 
   homekube-ca.crt: |
 {{ .Values.caCert | indent 4 }}
+{{- with .Values.agentVault.caCert }}
+  agent-vault-ca.crt: |
+{{ . | indent 4 }}
+{{- end }}
 
   nginx.conf: |
     events {}
