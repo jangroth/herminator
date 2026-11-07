@@ -152,6 +152,9 @@ spec:
               value: {{ join "," .Values.agentVault.noProxy | quote }}
             - name: CURL_CA_BUNDLE
               value: /etc/ssl/certs/homekube-bundle/ca-bundle.crt
+            # Node's fetch ignores HTTPS_PROXY without it.
+            - name: NODE_USE_ENV_PROXY
+              value: "1"
             {{- end }}
           ports:
             - name: gateway

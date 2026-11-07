@@ -19,7 +19,7 @@ render .. "${on[@]}" | yq -p=json -o=json 'select(.kind == "Deployment")' >"$tmp
 with_env() { yq -p=json -o=yaml "[.spec.template.spec | (.containers[], .initContainers[]) | select(.env // [] | any_c(.name == \"$1\")) | .name] | join(\",\")" "$tmp/deploy.json"; }
 
 [ "$(yq -p=json -o=yaml '.metadata.namespace' "$tmp/ss.json")" = hermes ] || fail "SealedSecret hermes-agent-vault missing or not in hermes"
-for var in HTTPS_PROXY NO_PROXY CURL_CA_BUNDLE; do
+for var in HTTPS_PROXY NO_PROXY CURL_CA_BUNDLE NODE_USE_ENV_PROXY; do
   [ "$(with_env $var)" = hermes ] || fail "$var must be set on the hermes container only"
 done
 
