@@ -76,7 +76,6 @@ agentVault:
     - 192.168.86.0/24
     - localhost
     - 127.0.0.1
-    - api.telegram.org
 
 # Read-only export of allowlisted Hermes state to a private repo (openspec state-export).
 stateExport:
