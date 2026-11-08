@@ -33,7 +33,16 @@ See proposal.md for motivation. The requirements are in `specs/state-export/spec
 
 This keeps classification next to the other counts, in Python rather than bash glob handling. *Alternative:* classify in `export.sh` and pass the result in. Rejected because the README is the only consumer.
 
-**README layout.** Intro, then `## Exported` (path, description), `## Ignored` (patterns, reason), `## Unclassified` (a bullet list, or "None."), then `## Overview` last. Paths and patterns are rendered in backticks, and `|` in descriptions is escaped. The previous Overview rows are still found by their header line, so the new sections before it don't affect parsing. The first export after rollout regenerates the README, the same way any intro change does.
+**README layout.** Changes first, reference last:
+1. Intro, ending with links to the reference sections.
+2. `## Unclassified`: a bullet list, or "None.", with how to classify an entry.
+3. `## Overview`: the history table.
+4. `## Exported`: path and description.
+5. `## Ignored`: patterns and reason.
+
+Unclassified is the only section that asks for a decision and is usually one line, so it costs nothing at the top. The reference tables change least and are read least. *Alternative:* reference tables before Overview, as first rolled out. Rejected because the parts that change were buried under about 30 stable rows. Overview grows by a row per change and pushes the reference down over time, which the intro links offset.
+
+Paths and patterns are rendered in backticks, and `|` in descriptions is escaped. The previous Overview rows are still found by their header line, and parsing stops at the blank line after the table, so sections before or after it don't affect it. The first export after a layout change regenerates the README, the same way any intro change does.
 
 **Initial classification.** Today's entries, so that Unclassified starts empty:
 
@@ -49,7 +58,7 @@ This keeps classification next to the other counts, in Python rather than bash g
 | ignore | `*cache*` | regenerable caches |
 | ignore | `logs`, `*.log`, `kanban` | logs, including kanban task-run logs and workspaces |
 | ignore | `home`, `.local`, `lazy-packages`, `bin`, `installs` | installed tools and packages; `package-manifest` documents them |
-| ignore | `state`, `runtime`, `pending`, `pending_messages`, `telemetry`, `plugin-update-checks`, `gateway_state.json`, `channel_directory.json`, `spawn-ledger.json`, `telegram_update_receipts_*`, `install_id`, `tui-theme-boot.json`, `.scratch_tip_shown`, `.skills_prompt_snapshot.json` | runtime state |
+| ignore | `state`, `runtime`, `pending`, `pending_messages`, `telemetry`, `plugin-update-checks`, `gateway_state.json`, `channel_directory.json`, `spawn-ledger.json`, `telegram_update_receipts_*`, `install_id`, `tui-theme-boot.json`, `.scratch_tip_shown`, `.skills_prompt_snapshot.json`, `.clean_shutdown` | runtime state |
 | ignore | `backups`, `.curator_backups` | copies of exported files; git history covers them |
 | ignore | `images` | generated binary images |
 | ignore | `briefing`, `.hermes` | stale scratch from August 2026 (morning-briefing prototype, one plan file) |
