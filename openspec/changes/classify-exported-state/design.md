@@ -44,7 +44,7 @@ This keeps classification next to the other counts, in Python rather than bash g
 | export (new) | `hooks`, `plugins`, `skins`, `plans` | user-authored extension points and plans, empty today; exporting them catches future content |
 | ignore | `.env`, `auth.json`, `shared`, `pairing` | credentials and tokens |
 | ignore | `.hermes_history` | CLI input history; may hold pasted secrets |
-| ignore | `sessions`, `*.db`, `*.db-*`, `*.sqlite3` | conversation transcripts and runtime databases |
+| ignore | `sessions`, `*.db`, `*.db-*` | conversation transcripts and runtime databases |
 | ignore | `*.lock`, `*.pid`, `*.sock` | process coordination |
 | ignore | `*cache*` | regenerable caches |
 | ignore | `logs`, `*.log`, `kanban` | logs, including kanban task-run logs and workspaces |
