@@ -11,6 +11,7 @@ REMOTE=${STATE_EXPORT_REMOTE:?}
 BRANCH=${STATE_EXPORT_BRANCH:-main}
 BETTERLEAKS=${STATE_EXPORT_BETTERLEAKS:-/tools/betterleaks}
 PATHS=${STATE_EXPORT_PATHS:?}
+CLASSIFICATION=${STATE_EXPORT_CLASSIFICATION:?}
 TAG=${HERMES_IMAGE_TAG:?}
 NOW=$(date -u +%FT%TZ)
 
@@ -78,7 +79,7 @@ find "$WORK" -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
 while IFS= read -r p; do
   [[ -n $p ]] && copy_path "$p"
 done <<<"$PATHS"
-python3 -I "$(dirname "$0")/overview.py" "$SRC" "$BUNDLED" "$TAG" "$NOW" \
+python3 -I "$(dirname "$0")/overview.py" "$SRC" "$BUNDLED" "$TAG" "$NOW" "$CLASSIFICATION" \
   < <(git -C "$WORK" show HEAD:README.md 2>/dev/null) >"$WORK/README.md"
 # Catches files swapped for symlinks between find and cp.
 find "$WORK" -type l ! -path "$WORK/.git/*" -print -delete

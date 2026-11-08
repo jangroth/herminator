@@ -274,8 +274,20 @@ spec:
               value: {{ .Values.stateExport.branch | quote }}
             - name: STATE_EXPORT_INTERVAL
               value: {{ .Values.stateExport.intervalSeconds | quote }}
+            {{- $paths := list }}
+            {{- range .Values.stateExport.paths }}
+            {{- if not (kindIs "map" .) }}{{ fail (printf "stateExport.paths: %v must be {path, description}" .) }}{{ end }}
+            {{- $paths = append $paths (required "stateExport.paths: every entry needs a path" .path) }}
+            {{- $_ := required (printf "stateExport.paths: %s needs a description" .path) .description }}
+            {{- end }}
+            {{- range .Values.stateExport.ignore }}
+            {{- $_ := required "stateExport.ignore: every entry needs patterns" .patterns }}
+            {{- $_ = required (printf "stateExport.ignore: %v needs a reason" .patterns) .reason }}
+            {{- end }}
             - name: STATE_EXPORT_PATHS
-              value: {{ join "\n" .Values.stateExport.paths | quote }}
+              value: {{ join "\n" $paths | quote }}
+            - name: STATE_EXPORT_CLASSIFICATION
+              value: {{ dict "paths" .Values.stateExport.paths "ignore" .Values.stateExport.ignore | toJson | quote }}
             - name: HERMES_IMAGE_TAG
               value: {{ .Values.image.tag | quote }}
             - name: STATE_EXPORT_KEY_SOURCE

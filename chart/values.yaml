@@ -83,15 +83,61 @@ stateExport:
   branch: main
   intervalSeconds: 3600
   # Relative to /opt/data. Under skills/, entries starting with "." are skipped.
+  # Each top-level entry of /opt/data is export (first component of a path),
+  # ignore (matches a pattern) or unclassified; the README lists all three.
   paths:
-    - config.yaml
-    - SOUL.md
-    - memories
-    - cron/jobs.json
-    - scripts
-    - skills
-    - morning-briefing
-    - nvim-tips
+    - path: config.yaml
+      description: Hermes configuration
+    - path: SOUL.md
+      description: persona and standing instructions
+    - path: memories
+      description: long-term memory files
+    - path: cron/jobs.json
+      description: cron job definitions
+    - path: scripts
+      description: scripts Hermes wrote
+    - path: skills
+      description: bundled, installed and created skills
+    - path: morning-briefing
+      description: output of the morning-briefing cron job
+    - path: nvim-tips
+      description: output of the nvim-tips cron job
+    - path: package-manifest
+      description: output of the package-manifest-watchdog cron job; packages installed outside the image
+    - path: hooks
+      description: user-defined hooks
+    - path: plugins
+      description: user-installed plugins
+    - path: skins
+      description: user-defined skins
+    - path: plans
+      description: plans Hermes wrote
+  # Globs over top-level names; "*" also matches a leading ".".
+  ignore:
+    - reason: credentials and tokens
+      patterns: [.env, auth.json, shared, pairing]
+    - reason: CLI input history; may hold pasted secrets
+      patterns: [.hermes_history]
+    - reason: conversation transcripts and runtime databases
+      patterns: [sessions, "*.db", "*.db-*"]
+    - reason: process coordination
+      patterns: ["*.lock", "*.pid", "*.sock"]
+    - reason: regenerable caches
+      patterns: ["*cache*"]
+    - reason: logs, including kanban task-run logs and workspaces
+      patterns: [logs, "*.log", kanban]
+    - reason: installed tools and packages; package-manifest documents them
+      patterns: [home, .local, lazy-packages, bin, installs]
+    - reason: runtime state
+      patterns: [state, runtime, pending, pending_messages, telemetry, plugin-update-checks, gateway_state.json, channel_directory.json, spawn-ledger.json, "telegram_update_receipts_*", install_id, tui-theme-boot.json, .scratch_tip_shown, .skills_prompt_snapshot.json]
+    - reason: copies of exported files; git history covers them
+      patterns: [backups, .curator_backups]
+    - reason: generated binary images
+      patterns: [images]
+    - reason: stale scratch from August 2026
+      patterns: [briefing, .hermes]
+    - reason: empty or filesystem-managed
+      patterns: [desktop, platforms, sandboxes, workspace, lost+found]
   betterleaks:
     image: ghcr.io/betterleaks/betterleaks
     tag: ""
