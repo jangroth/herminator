@@ -2,4 +2,4 @@ apiVersion: v2
 name: hermes
 description: Hermes Agent, deployed to homekube
 type: application
-version: 0.1.17
+version: 0.1.18

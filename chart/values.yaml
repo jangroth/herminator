@@ -129,7 +129,7 @@ stateExport:
     - reason: installed tools and packages; package-manifest documents them
       patterns: [home, .local, lazy-packages, bin, installs]
     - reason: runtime state
-      patterns: [state, runtime, pending, pending_messages, telemetry, plugin-update-checks, gateway_state.json, channel_directory.json, spawn-ledger.json, "telegram_update_receipts_*", install_id, tui-theme-boot.json, .scratch_tip_shown, .skills_prompt_snapshot.json]
+      patterns: [state, runtime, pending, pending_messages, telemetry, plugin-update-checks, gateway_state.json, channel_directory.json, spawn-ledger.json, "telegram_update_receipts_*", install_id, tui-theme-boot.json, .scratch_tip_shown, .skills_prompt_snapshot.json, .clean_shutdown]
     - reason: copies of exported files; git history covers them
       patterns: [backups, .curator_backups]
     - reason: generated binary images
