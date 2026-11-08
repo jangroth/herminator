@@ -27,6 +27,8 @@ unclassified=$(sed -n '/^## Unclassified$/,/^## Overview$/p' "$tmp/r1" | grep '^
 grep -qxF '| `cron/jobs.json` | cron \| jobs |' "$tmp/r1" || fail "Exported row for cron/jobs.json"
 grep -qxF '| `*.db`, `kanban` | databases |' "$tmp/r1" || fail "Ignored row for *.db, kanban"
 [ "$(grep -c '^| 2026-11-08 10:00 |' "$tmp/r1")" = 1 ] || fail "first Overview row"
+[ "$(grep '^## ' "$tmp/r1" | tr '\n' ' ')" = "## Unclassified ## Overview ## Exported ## Ignored " ] ||
+  fail "section order: $(grep '^## ' "$tmp/r1" | tr '\n' ' ')"
 
 overview 2026-11-08T11:00:00Z <"$tmp/r1" >"$tmp/r2"
 cmp -s "$tmp/r1" "$tmp/r2" || fail "unchanged state changed the README"

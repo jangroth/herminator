@@ -24,13 +24,19 @@
 
 ## 3. Rollout
 
-- [ ] 3.1 After merge, verify ArgoCD is Synced/Healthy and `state-export` is ready.
-- [ ] 3.2 Verify the first commit after rollout in `herminator-state`:
+- [x] 3.1 After merge, verify ArgoCD is Synced/Healthy and `state-export` is ready.
+- [x] 3.2 Verify the first commit after rollout in `herminator-state`:
   - it adds `package-manifest/`
   - its README shows the Exported and Ignored tables
   - Unclassified is "None.", or lists only entries created since apply
   - the Overview rows are intact
 
+## 4. Follow-up from rollout
+
+- [x] 4.1 Reorder the README to intro (with links to Exported and Ignored), Unclassified, Overview, Exported, Ignored, as in design.md. Verify that `chart/tests/state-export-overview.sh` asserts the order and passes, and that the live README's Overview rows carry over into the new layout.
+- [x] 4.2 Add `.clean_shutdown` to the runtime-state ignore patterns: the first export after rollout listed it as unclassified, and Hermes removes it shortly after start. Bump the chart and add a `CHANGELOG.md` entry. Verify `helm lint` and `openspec validate classify-exported-state --strict` pass.
+
 ## Workflow follow-up
 
 - Archive the change once verified. The archive PR closes issue #25.
+- After the archive PR merges, check that the next herminator-state README has the new section order and Unclassified "None.".
