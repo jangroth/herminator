@@ -13,16 +13,24 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Entries
 
 ## 2026-11-08
 
+### Added
+
+- `openspec/specs/credential-brokering/`: Hermes's HTTPS goes through the Agent Vault proxy when configured, trusts its CA, restarts on rotation, and only the `hermes` container is proxied, from archiving `agent-vault-proxy`. Closes issue [#20](https://github.com/jangroth/herminator/issues/20).
+
 ### Changed
 
-- `chart/`: `api.telegram.org` is no longer in the default `agentVault.noProxy`, so Telegram goes through the Agent Vault proxy, which substitutes the bot token into the path (homekube spec 010 step 9). Chart bumped to 0.1.16. Part of [`agent-vault-proxy`](openspec/changes/agent-vault-proxy/) (task 1.7), issue [#20](https://github.com/jangroth/herminator/issues/20).
-- `chart/`: with `agentVault` on, the `hermes` container also gets `NODE_USE_ENV_PROXY=1`, so Node's built-in `fetch` uses `HTTPS_PROXY` and `NO_PROXY`; without it Node went direct. Chart bumped to 0.1.15. Part of [`agent-vault-proxy`](openspec/changes/agent-vault-proxy/) (task 1.6), issue [#20](https://github.com/jangroth/herminator/issues/20).
+- `chart/`: `api.telegram.org` is no longer in the default `agentVault.noProxy`, so Telegram goes through the Agent Vault proxy, which substitutes the bot token into the path (homekube spec 010 step 9). Chart bumped to 0.1.16. Part of [`agent-vault-proxy`](openspec/changes/archive/2026-11-08-agent-vault-proxy/) (task 1.7), issue [#20](https://github.com/jangroth/herminator/issues/20).
+- `chart/`: with `agentVault` on, the `hermes` container also gets `NODE_USE_ENV_PROXY=1`, so Node's built-in `fetch` uses `HTTPS_PROXY` and `NO_PROXY`; without it Node went direct. Chart bumped to 0.1.15. Part of [`agent-vault-proxy`](openspec/changes/archive/2026-11-08-agent-vault-proxy/) (task 1.6), issue [#20](https://github.com/jangroth/herminator/issues/20).
+
+### Operational
+
+- Verified the agent-vault-proxy rollout. Chart 0.1.14 synced with the block unset and no pod restart. With the homekube-apps values set, the pod restarted, only `hermes` has `HTTPS_PROXY`, and an external `curl -v` saw issuer `CN=Infisical Agent Vault Proxy`; Dex, Aperture and Telegram (then bypassed) kept working. After 0.1.15, Node's `fetch` went through the proxy. After 0.1.16, Telegram reconnected through it: every call is logged `brokered` with the placeholder path and `"substituted":["path"]`, and a file sent to Hermes downloaded (`/file/bot…/documents/…` 200).
 
 ## 2026-11-07
 
 ### Added
 
-- `chart/`: optional `agentVault` block for routing Hermes's HTTPS through homekube's Infisical Agent Vault proxy ([homekube spec 010](https://github.com/jangroth/homekube/blob/main/docs/specs/010-agent-vault-hermes.md)). With `agentVault.encryptedHttpsProxy` set, new `templates/agent-vault-sealedsecret.yaml` renders SealedSecret `hermes-agent-vault`, and only the `hermes` container gets `HTTPS_PROXY` from it, `NO_PROXY` (from `agentVault.noProxy`) and `CURL_CA_BUNDLE`. `agentVault.caCert` (required with it) becomes `agent-vault-ca.crt` in `hermes-config`; `build-ca-bundle` adds it to `ca-bundle.crt` and writes `node-extra.crt` for `NODE_EXTRA_CA_CERTS`. A `checksum/agent-vault` pod annotation restarts Hermes when either value changes. With the block unset, the rendered objects are unchanged. New `chart/tests/agent-vault-render.sh` checks both. Chart bumped to 0.1.14. OpenSpec change [`agent-vault-proxy`](openspec/changes/agent-vault-proxy/), issue [#20](https://github.com/jangroth/herminator/issues/20).
+- `chart/`: optional `agentVault` block for routing Hermes's HTTPS through homekube's Infisical Agent Vault proxy ([homekube spec 010](https://github.com/jangroth/homekube/blob/main/docs/specs/010-agent-vault-hermes.md)). With `agentVault.encryptedHttpsProxy` set, new `templates/agent-vault-sealedsecret.yaml` renders SealedSecret `hermes-agent-vault`, and only the `hermes` container gets `HTTPS_PROXY` from it, `NO_PROXY` (from `agentVault.noProxy`) and `CURL_CA_BUNDLE`. `agentVault.caCert` (required with it) becomes `agent-vault-ca.crt` in `hermes-config`; `build-ca-bundle` adds it to `ca-bundle.crt` and writes `node-extra.crt` for `NODE_EXTRA_CA_CERTS`. A `checksum/agent-vault` pod annotation restarts Hermes when either value changes. With the block unset, the rendered objects are unchanged. New `chart/tests/agent-vault-render.sh` checks both. Chart bumped to 0.1.14. OpenSpec change [`agent-vault-proxy`](openspec/changes/archive/2026-11-08-agent-vault-proxy/), issue [#20](https://github.com/jangroth/herminator/issues/20).
 
 ## 2026-11-04
 

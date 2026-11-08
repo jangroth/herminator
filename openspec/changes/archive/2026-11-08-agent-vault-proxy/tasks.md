@@ -8,12 +8,12 @@
 - [x] 1.4 Add `chart/tests/agent-vault-render.sh`: compares a render without `agentVault` with one from `origin/main`, and checks a render with the block set (SealedSecret name and namespace, env only on `hermes`, annotation changes when either value changes). Verify it passes, and fails when an env var is moved to another container.
 - [x] 1.5 Bump the chart version, add a `CHANGELOG.md` entry linking this change and issue #20, and describe the block in `README.md`. Verify `helm lint` and `openspec validate agent-vault-proxy --strict` pass.
 - [x] 1.6 Add `NODE_USE_ENV_PROXY=1` to the `hermes` container when the block is on, since Node's built-in `fetch` ignores `HTTPS_PROXY` without it, and to the render test's hermes-only check. Bump the chart version. Verify the render test passes and, in the pod, `node -e 'fetch(...)'` gets a certificate issued by the proxy CA.
-- [ ] 1.7 Drop `api.telegram.org` from the default `noProxy` once the bundle's `telegram` service substitutes the bot token in the path, and bump the chart version. `TELEGRAM_BOT_TOKEN` becomes a placeholder in the same restart. Verify Telegram reconnects, its requests are logged as `brokered` with the placeholder path only, and a photo sent to Hermes downloads.
+- [x] 1.7 Drop `api.telegram.org` from the default `noProxy` once the bundle's `telegram` service substitutes the bot token in the path, and bump the chart version. `TELEGRAM_BOT_TOKEN` becomes a placeholder in the same restart. Verify Telegram reconnects, its requests are logged as `brokered` with the placeholder path only, and a photo sent to Hermes downloads.
 
 ## 2. Rollout
 
-- [ ] 2.1 After merge, verify ArgoCD shows `hermes` Synced/Healthy with no pod restart (block unset).
-- [ ] 2.2 After the homekube-apps values PR merges, verify the pod restarted, `HTTPS_PROXY` is set only in `hermes`, `curl -v` from the `hermes` container to an external HTTPS host succeeds with issuer `CN=Infisical Agent Vault Proxy`, and Dex and Aperture still work.
+- [x] 2.1 After merge, verify ArgoCD shows `hermes` Synced/Healthy with no pod restart (block unset).
+- [x] 2.2 After the homekube-apps values PR merges, verify the pod restarted, `HTTPS_PROXY` is set only in `hermes`, `curl -v` from the `hermes` container to an external HTTPS host succeeds with issuer `CN=Infisical Agent Vault Proxy`, and Dex and Aperture still work.
 
 ## Workflow follow-up
 
