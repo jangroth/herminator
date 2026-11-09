@@ -11,6 +11,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Entries
 - **Operational** — manual interventions, recoveries, one-off ops actions
 - **Decisions** — links to `DECISIONS.md` entries created on this day
 
+## 2026-11-09
+
+### Changed
+
+- `chart/`: `plugin-data`, where the bundled `hermes-achievements` dashboard plugin keeps its scan caches and unlocked badges, joins the runtime-state ignore patterns; the export had listed it as unclassified. Everything in it is derived from session history, which is not exported. Chart bumped to 0.1.19.
+
 ## 2026-11-08
 
 ### Added
