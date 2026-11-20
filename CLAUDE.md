@@ -1,25 +1,20 @@
 # herminator
 
-Packaging and deploying [Hermes Agent](https://hermes-agent.nousresearch.com/) (Nous Research) onto the homekube Raspberry Pi k8s cluster.
+Packaging and deploying [Hermes Agent](https://hermes-agent.nousresearch.com/) (Nous Research) onto the homekube Raspberry Pi k8s cluster. The Helm chart is in `chart/`.
 
-## Working Approach
+## Change workflow
 
-- **Spec-driven ([OpenSpec](https://github.com/Fission-AI/OpenSpec))**: propose an OpenSpec change (`/opsx:propose`) before any significant implementation, apply it (`/opsx:apply`), and archive it once verified (`/opsx:archive`). Changes live in `openspec/changes/`; `openspec/specs/` is the current truth, updated only by archiving. Run `openspec validate <change> --strict` before opening a PR. A change's `proposal.md` links the issue it came from, and the archive PR closes it. Right after proposing, push the change's branch and open a draft PR (`Refs #<issue>`) holding only the artifacts; the implementation lands on the same branch. Then append a `## Tracking` section to the issue linking the change folder, branch and draft PR, and noting that the archive PR closes the issue. `docs/specs/` is legacy (Spec 001), not to be extended.
+Significant work goes through an [OpenSpec](https://github.com/Fission-AI/OpenSpec) change. `openspec/specs/` is the current truth, updated only by archiving; `docs/specs/` is legacy (Spec 001) and stays frozen.
+
+1. **Propose** (`/opsx:propose`): the change folder exists in `openspec/changes/`, and its `proposal.md` links the issue it came from.
+2. **Open the draft PR**: the change's branch is pushed and a draft PR (`Refs #<issue>`) holds only the artifacts.
+3. **Track**: the issue has a `## Tracking` section linking the change folder, branch and draft PR, noting that the archive PR closes the issue.
+4. **Apply** (`/opsx:apply`): the implementation is on the same branch, and `openspec validate <change> --strict` passes.
+5. **Archive** (`/opsx:archive`) once verified: the archive PR closes the issue.
+
+## Records
+
 - **Decision log**: record decisions that live outside a single OpenSpec change (no-change decisions, decisions spanning changes, amendments) in `DECISIONS.md`, newest decision first. Decisions capture **why**. Decisions made within a change stay in its `design.md`.
 - **Change log**: append every material change to `CHANGELOG.md` (top-level, reverse-chronological, [Keep a Changelog](https://keepachangelog.com) format). Captures **what was done** — distinct from `DECISIONS.md`.
-- **Todo**: open tasks tracked as GitHub Issues on this repo (not homekube's shared tracker — see DECISIONS.md #006), with the triage labels from the user-level `CLAUDE.md`.
-- **Trust**: propose, human approves for destructive/irreversible operations.
-- **Cross-repo boundary**: this repo owns the Hermes Helm chart (`chart/`). The separate `homekube-apps` repo owns the thin ArgoCD `Application` and Dex `staticClients` wiring that references this repo. A material change on the homekube-apps side gets an entry in *both* repos' logs (this repo's, and homekube's own `DECISIONS.md`/`CHANGELOG.md`).
-
-## Key Files
-
-- `DECISIONS.md` — decision log (why)
-- `CHANGELOG.md` — change log (what was done)
-- `openspec/specs/` — current-truth capability specs
-- `openspec/changes/` — in-flight changes; `archive/` holds completed ones
-- `docs/specs/` — legacy pre-OpenSpec specs
-- `chart/` — the Helm chart for hermes-agent
-
-## Related
-
-- Cluster: `/Users/jan/Projects/kube/homekube` — ArgoCD app-of-apps GitOps; ArgoCD watches its `homekube-apps` repo.
+- **Todo**: open tasks tracked as GitHub Issues on this repo, not homekube's shared tracker (DECISIONS.md #006).
+- **Cross-repo boundary**: `homekube-apps` owns the thin ArgoCD `Application` and Dex `staticClients` wiring that references this repo. A material change on the homekube-apps side gets an entry in *both* repos' logs (this repo's, and homekube's own `DECISIONS.md`/`CHANGELOG.md`).
